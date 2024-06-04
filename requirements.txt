@@ -1,7 +1,8 @@
 aiogram==3.7.0
 SQLAlchemy==2.0.30
 greenlet==3.0.3
-aiosqlite==0.20.0
 Flask==3.0.3
 Flask-Admin==1.6.1
 Flask-SQLAlchemy==3.1.1
+aiopg==1.4.0
+psycopg2-binary==2.9.9
