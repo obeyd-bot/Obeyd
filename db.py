@@ -13,7 +13,7 @@ db_pass = os.environ["DB_PASS"]
 db_name = os.environ["DB_NAME"]
 
 engine = create_engine(
-    f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}",
+    f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
 )
 async_session = async_sessionmaker(engine, expire_on_commit=False)
 
