@@ -76,7 +76,7 @@ async def like_handler(query: CallbackQuery) -> None:
         session.add(like)
         await session.commit()
 
-    query.answer(text=SCORE_TABLE[str(score)])
+    await query.answer(text=SCORE_TABLE[str(score)])
 
 
 async def main() -> None:
