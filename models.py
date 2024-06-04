@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import ForeignKey, UniqueConstraint, func, null
+from sqlalchemy import ForeignKey, UniqueConstraint, func
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import String
@@ -21,9 +21,6 @@ class Joke(Base):
     )
     created_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
 
-    def __str__(self) -> str:
-        return f"joke:{self.id}"
-
 
 class Like(Base):
     __tablename__ = "likes"
@@ -39,6 +36,3 @@ class Like(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "joke_id", name="user_id_joke_id_key"),
     )
-
-    def __str__(self) -> str:
-        return super().__str__()
