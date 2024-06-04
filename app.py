@@ -43,31 +43,31 @@ async def like_handler(message: Message) -> None:
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text="1",
+                        text="💩",
                         callback_data=json.dumps(
                             {"score": 1, "joke_id": selected_joke.id}
                         ),
                     ),
                     InlineKeyboardButton(
-                        text="2",
+                        text="😐",
                         callback_data=json.dumps(
                             {"score": 2, "joke_id": selected_joke.id}
                         ),
                     ),
                     InlineKeyboardButton(
-                        text="3",
+                        text="🙂",
                         callback_data=json.dumps(
                             {"score": 3, "joke_id": selected_joke.id}
                         ),
                     ),
                     InlineKeyboardButton(
-                        text="4",
+                        text="😁",
                         callback_data=json.dumps(
                             {"score": 4, "joke_id": selected_joke.id}
                         ),
                     ),
                     InlineKeyboardButton(
-                        text="5",
+                        text="😂",
                         callback_data=json.dumps(
                             {"score": 5, "joke_id": selected_joke.id}
                         ),
