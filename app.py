@@ -85,12 +85,12 @@ async def like_handler(query: CallbackQuery) -> None:
     joke_id = data["joke_id"]
     score = data["score"]
 
-    print(type(user_id), type(joke_id), type(score))
-
     async with async_session() as session:
         like = Like(user_id=user_id, joke_id=joke_id, score=score)
         session.add(like)
         await session.commit()
+
+    query.answer(text="دریافت شد")
 
 
 async def main() -> None:
