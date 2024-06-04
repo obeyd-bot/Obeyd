@@ -23,4 +23,4 @@ if __name__ == "__main__":
     admin.add_view(ModelView(Joke, db.session))
     admin.add_view(ModelView(Like, db.session))
 
-    app.run()
+    app.run(host="0.0.0.0")
