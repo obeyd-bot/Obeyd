@@ -27,6 +27,15 @@ async def command_start_handler(message: Message) -> None:
     await message.answer(f"سلام {html.bold(message.from_user.full_name)}!")
 
 
+SCORE_TABLE = {
+    "1": "💩",
+    "2": "😐",
+    "3": "🙂",
+    "4": "😁",
+    "5": "😂",
+}
+
+
 @dp.message(Command("joke"))
 async def like_handler(message: Message) -> None:
     async with async_session() as session:
@@ -43,35 +52,12 @@ async def like_handler(message: Message) -> None:
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text="💩",
+                        text=score_text,
                         callback_data=json.dumps(
-                            {"score": 1, "joke_id": selected_joke.id}
+                            {"score": int(score), "joke_id": selected_joke.id}
                         ),
-                    ),
-                    InlineKeyboardButton(
-                        text="😐",
-                        callback_data=json.dumps(
-                            {"score": 2, "joke_id": selected_joke.id}
-                        ),
-                    ),
-                    InlineKeyboardButton(
-                        text="🙂",
-                        callback_data=json.dumps(
-                            {"score": 3, "joke_id": selected_joke.id}
-                        ),
-                    ),
-                    InlineKeyboardButton(
-                        text="😁",
-                        callback_data=json.dumps(
-                            {"score": 4, "joke_id": selected_joke.id}
-                        ),
-                    ),
-                    InlineKeyboardButton(
-                        text="😂",
-                        callback_data=json.dumps(
-                            {"score": 5, "joke_id": selected_joke.id}
-                        ),
-                    ),
+                    )
+                    for score, score_text in SCORE_TABLE.items()
                 ]
             ]
         ),
@@ -90,7 +76,7 @@ async def like_handler(query: CallbackQuery) -> None:
         session.add(like)
         await session.commit()
 
-    query.answer(text="دریافت شد")
+    query.answer(text=SCORE_TABLE[str(score)])
 
 
 async def main() -> None:
