@@ -1,0 +1,4 @@
+aiogram==3.7.0
+SQLAlchemy==2.0.30
+greenlet==3.0.3
+aiosqlite==0.20.0
