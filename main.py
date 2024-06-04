@@ -22,13 +22,6 @@ from models import Joke, Like
 dp = Dispatcher()
 
 
-outputs = [
-    "One",
-    "Two",
-    "Three",
-]
-
-
 @dp.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
     await message.answer(f"سلام {html.bold(message.from_user.full_name)}!")
