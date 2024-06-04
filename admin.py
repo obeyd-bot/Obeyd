@@ -11,7 +11,9 @@ from models import Base, Joke, Like
 if __name__ == "__main__":
     app = Flask(__name__)
     app.config["FLASK_ADMIN_SWATCH"] = "cerulean"
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(Path(__file__).parent.resolve(), "db.sqlite")}"
+    app.config["SQLALCHEMY_DATABASE_URI"] = (
+        f"sqlite:///{os.path.join(Path(__file__).parent.resolve(), 'db.sqlite')}"
+    )
 
     db = SQLAlchemy(model_class=Base)
 
