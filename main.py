@@ -1,21 +1,26 @@
 import asyncio
+import json
 import logging
 import os
-import random
 import sys
 
 from aiogram import Bot, Dispatcher, html
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandStart
-from aiogram.types import Message
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
+from sqlalchemy import func, select
 
-# Bot token can be obtained via https://t.me/BotFather
-TOKEN = os.environ["API_TOKEN"]
-
-# All handlers should be attached to the Router (or Dispatcher)
+from db import async_session
+from models import Joke, Like
 
 dp = Dispatcher()
+
 
 outputs = [
     "One",
@@ -30,12 +35,76 @@ async def command_start_handler(message: Message) -> None:
 
 
 @dp.message(Command("joke"))
-async def joke_handler(message: Message) -> None:
-    await message.answer(random.choice(outputs))
+async def like_handler(message: Message) -> None:
+    async with async_session() as session:
+        result = await session.execute(select(Joke).order_by(func.random()))
+
+    selected_joke = result.scalar()
+    if not selected_joke:
+        await message.answer("جوکی ندارم که برات بگم :(")
+        return
+
+    await message.answer(
+        selected_joke.text,
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="1",
+                        callback_data=json.dumps(
+                            {"score": 1, "joke_id": selected_joke.id}
+                        ),
+                    ),
+                    InlineKeyboardButton(
+                        text="2",
+                        callback_data=json.dumps(
+                            {"score": 2, "joke_id": selected_joke.id}
+                        ),
+                    ),
+                    InlineKeyboardButton(
+                        text="3",
+                        callback_data=json.dumps(
+                            {"score": 3, "joke_id": selected_joke.id}
+                        ),
+                    ),
+                    InlineKeyboardButton(
+                        text="4",
+                        callback_data=json.dumps(
+                            {"score": 4, "joke_id": selected_joke.id}
+                        ),
+                    ),
+                    InlineKeyboardButton(
+                        text="5",
+                        callback_data=json.dumps(
+                            {"score": 5, "joke_id": selected_joke.id}
+                        ),
+                    ),
+                ]
+            ]
+        ),
+    )
+
+
+@dp.callback_query()
+async def like_handler(query: CallbackQuery) -> None:
+    user_id = query.from_user.id
+    data = json.loads(query.data)
+    joke_id = data["joke_id"]
+    score = data["score"]
+
+    print(type(user_id), type(joke_id), type(score))
+
+    async with async_session() as session:
+        like = Like(user_id=user_id, joke_id=joke_id, score=score)
+        session.add(like)
+        await session.commit()
 
 
 async def main() -> None:
-    bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    bot = Bot(
+        token=os.environ["API_TOKEN"],
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+    )
     await dp.start_polling(bot)
 
 
