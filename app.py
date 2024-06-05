@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 
-from aiogram import Bot, Dispatcher, F, Router, html
+from aiogram import Bot, Dispatcher, Router, html
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandStart
@@ -101,7 +101,10 @@ async def submit_joke_end_handler(message: Message, state: FSMContext) -> None:
     await state.clear()
 
     async with async_session() as session:
-        joke = Joke(text=data["joke"])
+        joke = Joke(
+            text=data["joke"],
+            creator_user_id=message.from_user.id,
+        )
         session.add(joke)
         await session.commit()
 
