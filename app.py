@@ -101,12 +101,8 @@ async def submit_joke_end_handler(message: Message, state: FSMContext) -> None:
     await state.clear()
 
     async with async_session() as session:
-        await session.execute(
-            insert(Joke).values(
-                text=data["joke"],
-                creator_user_id=message.from_user.id,
-            )
-        )
+        joke = Joke(text=data["joke"])
+        session.add(joke)
         await session.commit()
 
 
