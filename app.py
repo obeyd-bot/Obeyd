@@ -4,15 +4,19 @@ import logging
 import os
 import sys
 
-from aiogram import Bot, Dispatcher, html
+from aiogram import Bot, Dispatcher, F, Router, html
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandStart
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import (
     CallbackQuery,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
+    ReplyKeyboardRemove,
 )
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
@@ -20,7 +24,11 @@ from sqlalchemy.dialects.postgresql import insert
 from db import async_session
 from models import Joke, Like
 
-dp = Dispatcher()
+storage = MemoryStorage()
+
+dp = Dispatcher(storage=storage)
+
+new_joke_router = Router()
 
 
 @dp.message(CommandStart())
@@ -38,7 +46,7 @@ SCORES = {
 
 
 @dp.message(Command("joke"))
-async def like_handler(message: Message) -> None:
+async def joke_handler(message: Message) -> None:
     async with async_session() as session:
         result = await session.execute(select(Joke).order_by(func.random()))
 
@@ -65,6 +73,43 @@ async def like_handler(message: Message) -> None:
     )
 
 
+class NewJokeForm(StatesGroup):
+    joke = State()
+
+
+@new_joke_router.message(Command("new_joke"))
+async def new_joke_handler(message: Message, state: FSMContext) -> None:
+    await state.set_state(NewJokeForm.joke)
+    await message.answer(
+        "جوکت رو توی یک پیام برام بنویس", reply_markup=ReplyKeyboardRemove()
+    )
+
+
+@dp.message(Command("cancel"))
+async def cancel_handler(message: Message, state: FSMContext) -> None:
+    current_state = await state.get_state()
+    if current_state is None:
+        return
+
+    await state.clear()
+    await message.answer("اشکالی نداره :)", reply_markup=ReplyKeyboardRemove())
+
+
+@new_joke_router.message(NewJokeForm.joke)
+async def new_joke_handler(message: Message, state: FSMContext) -> None:
+    data = await state.update_data(joke=message.text)
+    await state.clear()
+
+    async with async_session() as session:
+        await session.execute(
+            insert(Joke).values(
+                text=data["joke"],
+                creator_user_id=message.from_user.id,
+            )
+        )
+        await session.commit()
+
+
 @dp.callback_query()
 async def like_handler(query: CallbackQuery) -> None:
     user_id = query.from_user.id
@@ -73,14 +118,13 @@ async def like_handler(query: CallbackQuery) -> None:
     score = data["score"]
 
     async with async_session() as session:
-        stmt = (
+        await session.execute(
             insert(Like)
             .values(user_id=user_id, joke_id=joke_id, score=score)
             .on_conflict_do_update(
                 constraint="user_id_joke_id_key", set_={"score": score}
             )
         )
-        await session.execute(stmt)
         await session.commit()
 
     await query.answer(text=SCORES[str(score)]["notif"])
@@ -91,6 +135,9 @@ async def main() -> None:
         token=os.environ["API_TOKEN"],
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
+
+    dp.include_router(new_joke_router)
+
     await dp.start_polling(bot)
 
 
