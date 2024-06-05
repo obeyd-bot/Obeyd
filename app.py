@@ -15,6 +15,7 @@ from aiogram.types import (
     Message,
 )
 from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import insert
 
 from db import async_session
 from models import Joke, Like
@@ -72,8 +73,14 @@ async def like_handler(query: CallbackQuery) -> None:
     score = data["score"]
 
     async with async_session() as session:
-        like = Like(user_id=user_id, joke_id=joke_id, score=score)
-        session.add(like)
+        stmt = (
+            insert(Like)
+            .values(user_id=user_id, joke_id=joke_id, score=score)
+            .on_conflict_do_update(
+                constraint="user_id_joke_id_key", set_={"score": score}
+            )
+        )
+        await session.execute(stmt)
         await session.commit()
 
     await query.answer(text=SCORE_TABLE[str(score)])
