@@ -1,8 +1,7 @@
 import asyncio
 import os
 
-from aiopg.sa import create_engine
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from models import Base
 
@@ -12,8 +11,8 @@ db_user = os.environ["DB_USER"]
 db_pass = os.environ["DB_PASS"]
 db_name = os.environ["DB_NAME"]
 
-engine = create_engine(
-    f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+engine = create_async_engine(
+    f"postgresql+psycopg://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
 )
 async_session = async_sessionmaker(engine, expire_on_commit=False)
 

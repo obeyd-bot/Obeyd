@@ -18,7 +18,7 @@ if __name__ == "__main__":
     app.config["FLASK_ADMIN_SWATCH"] = "cerulean"
     app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
     app.config["SQLALCHEMY_DATABASE_URI"] = (
-        f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+        f"postgresql+psycopg://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
     )
 
     db = SQLAlchemy(model_class=Base)
