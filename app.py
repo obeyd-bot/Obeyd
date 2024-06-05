@@ -105,6 +105,8 @@ async def submit_joke_end_handler(message: Message, state: FSMContext) -> None:
         session.add(joke)
         await session.commit()
 
+    await message.answer("😂😂😂")
+
 
 @dp.callback_query()
 async def like_handler(query: CallbackQuery) -> None:
