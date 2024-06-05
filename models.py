@@ -16,6 +16,8 @@ class Joke(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str] = mapped_column(String(280))
 
+    creator_user_id = Mapped[int]
+
     updated_at: Mapped[datetime.datetime] = mapped_column(
         server_default=func.now(), server_onupdate=func.now()
     )
