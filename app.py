@@ -28,12 +28,12 @@ async def command_start_handler(message: Message) -> None:
     await message.answer(f"سلام {html.bold(message.from_user.full_name)}!")
 
 
-SCORE_TABLE = {
-    "1": "💩",
-    "2": "😐",
-    "3": "🙂",
-    "4": "😁",
-    "5": "😂",
+SCORES = {
+    "1": {"emoji": "💩", "notif": "💩💩💩"},
+    "2": {"emoji": "😐", "notif": "😐😐😐"},
+    "3": {"emoji": "🙂", "notif": "🙂🙂🙂"},
+    "4": {"emoji": "😁", "notif": "😁😁😁"},
+    "5": {"emoji": "😂", "notif": "😂😂😂"},
 }
 
 
@@ -53,12 +53,12 @@ async def like_handler(message: Message) -> None:
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text=score_text,
+                        text=score_data["emoji"],
                         callback_data=json.dumps(
                             {"score": int(score), "joke_id": selected_joke.id}
                         ),
                     )
-                    for score, score_text in SCORE_TABLE.items()
+                    for score, score_data in SCORES.items()
                 ]
             ]
         ),
@@ -83,7 +83,7 @@ async def like_handler(query: CallbackQuery) -> None:
         await session.execute(stmt)
         await session.commit()
 
-    await query.answer(text=SCORE_TABLE[str(score)])
+    await query.answer(text=SCORES[str(score)]["notif"])
 
 
 async def main() -> None:
