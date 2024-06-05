@@ -28,7 +28,7 @@ storage = MemoryStorage()
 
 dp = Dispatcher(storage=storage)
 
-new_joke_router = Router()
+submit_joke_router = Router()
 
 
 @dp.message(CommandStart())
@@ -45,8 +45,8 @@ SCORES = {
 }
 
 
-@dp.message(Command("joke"))
-async def joke_handler(message: Message) -> None:
+@dp.message(Command("new_joke"))
+async def new_joke_handler(message: Message) -> None:
     async with async_session() as session:
         result = await session.execute(select(Joke).order_by(func.random()))
 
@@ -77,8 +77,8 @@ class NewJokeForm(StatesGroup):
     joke = State()
 
 
-@new_joke_router.message(Command("new_joke"))
-async def new_joke_handler(message: Message, state: FSMContext) -> None:
+@submit_joke_router.message(Command("submit_joke"))
+async def submit_joke_start_handler(message: Message, state: FSMContext) -> None:
     await state.set_state(NewJokeForm.joke)
     await message.answer(
         "جوکت رو توی یک پیام برام بنویس", reply_markup=ReplyKeyboardRemove()
@@ -95,8 +95,8 @@ async def cancel_handler(message: Message, state: FSMContext) -> None:
     await message.answer("اشکالی نداره :)", reply_markup=ReplyKeyboardRemove())
 
 
-@new_joke_router.message(NewJokeForm.joke)
-async def new_joke_handler(message: Message, state: FSMContext) -> None:
+@submit_joke_router.message(NewJokeForm.joke)
+async def submit_joke_end_handler(message: Message, state: FSMContext) -> None:
     data = await state.update_data(joke=message.text)
     await state.clear()
 
@@ -136,7 +136,7 @@ async def main() -> None:
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
 
-    dp.include_router(new_joke_router)
+    dp.include_router(submit_joke_router)
 
     await dp.start_polling(bot)
 
