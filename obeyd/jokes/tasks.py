@@ -15,6 +15,7 @@ SUBMIT_JOKE_NOTIF_ADMIN_MESSAGE_TEMPLATE = """
 
 async def notify_admin_submit_joke_async(joke_id, joke_text, from_user):
     bot = new_bot()
+
     await bot.send_message(
         chat_id=REVIEW_SUBMITTED_JOKES_CHAT_ID,
         message_thread_id=REVIEW_SUBMITTED_JOKES_TOPIC_ID,
@@ -47,3 +48,5 @@ async def notify_admin_submit_joke_async(joke_id, joke_text, from_user):
             ]
         ),
     )
+
+    await bot.close()

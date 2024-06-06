@@ -29,3 +29,5 @@ async def notify_creator_like_joke_async(joke_id, score):
 جوک شما: {joke.text}
 """,
     )
+
+    await bot.close()
