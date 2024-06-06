@@ -43,7 +43,7 @@ class SeenJoke(Base):
     seen_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
 
     __table_args__ = (
-        UniqueConstraint("user_id", "joke_id", name="user_id_joke_id_key"),
+        UniqueConstraint("user_id", "joke_id", name="seen_jokes_user_id_joke_id_key"),
     )
 
 
