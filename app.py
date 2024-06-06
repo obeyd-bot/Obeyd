@@ -99,7 +99,7 @@ async def new_joke_handler(message: Message) -> None:
         await session.execute(
             insert(SeenJoke)
             .values(user_id=message.from_user.id, joke_id=joke.id)
-            .on_conflict_do_nothing(constraint="user_id_joke_id_key")
+            .on_conflict_do_nothing(constraint="seen_jokes_user_id_joke_id_key")
         )
         await session.commit()
 
