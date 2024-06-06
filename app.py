@@ -19,7 +19,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql import expression
 
 from callbacks import LikeCallback, ReviewJokeCallback
-from models import Joke, Like, SeenJoke, async_session
+from models import Joke, Like, SeenJoke, User, async_session
 from tasks import notify_admin_submit_joke, notify_creator_like_joke
 from telegram import new_bot
 
@@ -30,10 +30,31 @@ dp = Dispatcher(storage=storage)
 submit_joke_router = Router()
 
 
+class NewUserForm(StatesGroup):
+    nickname = State()
+
+
 @dp.message(CommandStart())
-async def command_start_handler(message: Message) -> None:
+async def command_start_handler(message: Message, state: FSMContext) -> None:
     assert message.from_user
-    await message.answer(f"سلام {html.bold(message.from_user.full_name)}!")
+    await state.set_state(NewUserForm.nickname)
+    await message.answer(
+        f"سلام! من عبید زاکانی هستم. میتونم برات جوک بگم. چطوری صدات کنم؟"
+    )
+
+
+@dp.message(NewUserForm.nickname)
+async def command_start_nickname_handler(message: Message, state: FSMContext) -> None:
+    data = await state.update_data(nickname=message.text)
+    await state.clear()
+
+    async with async_session() as session:
+        await session.execute(insert(User).values(nickname=data["nickname"]))
+        await session.commit()
+
+    await message.answer(
+        f"خوشوقتم {data['nickname']} :) حالا /new_joke رو برام بنویس تا برات جوک بگم."
+    )
 
 
 SCORES = {

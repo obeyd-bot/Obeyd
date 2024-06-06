@@ -26,7 +26,7 @@ class Joke(Base):
     accepted: Mapped[bool] = mapped_column(server_default=expression.false())
 
     updated_at: Mapped[datetime.datetime] = mapped_column(
-        server_default=func.now(), server_onupdate=func.now()
+        server_default=func.now(), onupdate=func.now()
     )
     created_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
 
@@ -45,6 +45,18 @@ class SeenJoke(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "joke_id", name="seen_jokes_user_id_joke_id_key"),
     )
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    user_id: Mapped[int] = mapped_column(primary_key=True)
+
+    nickname: Mapped[str] = mapped_column(
+        unique=True, nullable=True, server_default=None
+    )
+
+    joined_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
 
 
 class Like(Base):
