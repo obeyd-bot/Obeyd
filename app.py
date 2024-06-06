@@ -125,8 +125,9 @@ async def submit_joke_end_handler(message: Message, state: FSMContext) -> None:
         )
         session.add(joke)
         await session.commit()
+        await session.refresh(joke)
 
-    notify_admin_submit_joke.delay(data["joke"], message.from_user.full_name)
+    notify_admin_submit_joke.delay(joke.id, joke.text, message.from_user.full_name)
 
     await message.answer("😂😂😂")
 
