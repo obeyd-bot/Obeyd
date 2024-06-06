@@ -34,6 +34,7 @@ submit_joke_router = Router()
 
 @dp.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
+    assert message.from_user
     await message.answer(f"سلام {html.bold(message.from_user.full_name)}!")
 
 
@@ -102,6 +103,8 @@ async def cancel_handler(message: Message, state: FSMContext) -> None:
 
 @submit_joke_router.message(NewJokeForm.joke)
 async def submit_joke_end_handler(message: Message, state: FSMContext) -> None:
+    assert message.from_user
+
     data = await state.update_data(joke=message.text)
     await state.clear()
 
@@ -120,6 +123,8 @@ async def submit_joke_end_handler(message: Message, state: FSMContext) -> None:
 
 @dp.callback_query()
 async def like_handler(query: CallbackQuery) -> None:
+    assert query.data
+
     user_id = query.from_user.id
     data = json.loads(query.data)
     joke_id = data["joke_id"]
