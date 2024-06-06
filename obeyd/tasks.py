@@ -15,5 +15,9 @@ def notify_creator_like_joke(joke_id, score):
 
 
 @app.task
-def notify_admin_submit_joke(joke_id, joke_text, from_user):
-    asyncio.run(notify_admin_submit_joke_async(joke_id, joke_text, from_user))
+def notify_admin_submit_joke(joke_id, joke_text, from_user, from_user_nickname):
+    asyncio.run(
+        notify_admin_submit_joke_async(
+            joke_id, joke_text, from_user, from_user_nickname
+        )
+    )
