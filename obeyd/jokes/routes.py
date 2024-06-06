@@ -15,10 +15,15 @@ from obeyd.jokes.callbacks import ReviewJokeCallback
 from obeyd.jokes.states import NewJokeForm
 from obeyd.likes.callbacks import LikeCallback
 from obeyd.likes.enums import SCORES
+from obeyd.middlewares import AuthenticateMiddleware, AuthorizeMiddleware
 from obeyd.models import Joke, Like, SeenJoke, async_session
 from obeyd.tasks import notify_admin_submit_joke
 
 jokes_router = Router()
+jokes_router.message.middleware(AuthenticateMiddleware())
+jokes_router.message.middleware(AuthorizeMiddleware())
+jokes_router.callback_query.middleware(AuthenticateMiddleware())
+jokes_router.callback_query.middleware(AuthorizeMiddleware())
 
 
 @jokes_router.message(Command("new_joke"))

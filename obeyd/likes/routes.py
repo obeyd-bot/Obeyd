@@ -4,10 +4,15 @@ from sqlalchemy.dialects.postgresql import insert
 
 from obeyd.likes.callbacks import LikeCallback
 from obeyd.likes.enums import SCORES
+from obeyd.middlewares import AuthenticateMiddleware, AuthorizeMiddleware
 from obeyd.models import Like, async_session
 from obeyd.tasks import notify_creator_like_joke
 
 likes_router = Router()
+likes_router.message.middleware(AuthenticateMiddleware())
+likes_router.message.middleware(AuthorizeMiddleware())
+likes_router.callback_query.middleware(AuthenticateMiddleware())
+likes_router.callback_query.middleware(AuthorizeMiddleware())
 
 
 @likes_router.callback_query(LikeCallback.filter())
