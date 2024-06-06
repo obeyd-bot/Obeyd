@@ -9,6 +9,7 @@ from aiogram.types import (
 )
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import selectinload
 
 from obeyd.jokes.callbacks import ReviewJokeCallback
 from obeyd.jokes.states import NewJokeForm
@@ -37,6 +38,7 @@ async def new_joke_handler(message: Message) -> None:
         )
         joke = await session.scalar(
             select(Joke)
+            .options(selectinload(Joke.creator))
             .filter(Joke.accepted.is_(True))
             .join(seen_jokes, Joke.id == seen_jokes.c.joke_id, isouter=True)
             .where(seen_jokes.c.joke_id.is_(None))
@@ -55,10 +57,10 @@ async def new_joke_handler(message: Message) -> None:
 
         await message.answer(
             f"""
-    {joke.text}
+{joke.text}
 
-    {html.bold(joke.creator.nickname)}
-    """,
+{html.bold(joke.creator.nickname)}
+""",
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=[
                     [
