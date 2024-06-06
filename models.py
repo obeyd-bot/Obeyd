@@ -31,7 +31,7 @@ class Joke(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
 
 
-class SeenJoke:
+class SeenJoke(Base):
     __tablename__ = "seen_jokes"
 
     id: Mapped[int] = mapped_column(primary_key=True)
