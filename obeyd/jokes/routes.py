@@ -1,4 +1,3 @@
-from typing import Any, Dict
 from aiogram import Router, html
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -98,9 +97,7 @@ async def submit_joke_start_handler(message: Message, state: FSMContext) -> None
 
 
 @jokes_router.message(NewJokeForm.joke)
-async def submit_joke_end_handler(
-    message: Message, state: FSMContext, data: Dict[str, Any]
-) -> None:
+async def submit_joke_end_handler(message: Message, state: FSMContext) -> None:
     assert message.from_user
 
     data = await state.update_data(joke=message.text)
@@ -115,9 +112,7 @@ async def submit_joke_end_handler(
         await session.commit()
         await session.refresh(joke)
 
-    notify_admin_submit_joke.delay(
-        joke.id, joke.text, message.from_user.full_name, data["user"].nickname
-    )
+    notify_admin_submit_joke.delay(joke.id, joke.text, message.from_user.full_name)
 
     await message.answer("😂😂😂")
 
