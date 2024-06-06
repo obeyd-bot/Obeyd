@@ -15,7 +15,7 @@ from obeyd.jokes.states import NewJokeForm
 from obeyd.likes.callbacks import LikeCallback
 from obeyd.likes.enums import SCORES
 from obeyd.models import Joke, Like, SeenJoke, async_session
-from tasks import notify_admin_submit_joke
+from obeyd.tasks import notify_admin_submit_joke
 
 jokes_router = Router()
 

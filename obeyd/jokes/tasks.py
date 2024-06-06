@@ -1,7 +1,7 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from obeyd.bot import new_bot
-from obeyd.jokes.routes import ReviewJokeCallback
+from obeyd.jokes.callbacks import ReviewJokeCallback
 
 REVIEW_SUBMITTED_JOKES_CHAT_ID = "-1002196165890"
 REVIEW_SUBMITTED_JOKES_TOPIC_ID = 34

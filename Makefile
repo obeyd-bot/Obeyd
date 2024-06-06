@@ -12,7 +12,7 @@ start-server:
 	python3 obeyd
 
 start-celery-worker:
-	celery -A tasks worker --loglevel=INFO
+	celery -A obeyd.tasks worker --loglevel=INFO
 
 start-admin-panel:
 	python3 obeyd/admin.py

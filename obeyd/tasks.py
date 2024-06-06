@@ -6,6 +6,7 @@ from obeyd.jokes.tasks import notify_admin_submit_joke_async
 from obeyd.likes.tasks import notify_creator_like_joke_async
 
 app = Celery("tasks", broker="redis://localhost:6379/0")
+app.conf.broker_connection_retry_on_startup = True
 
 
 @app.task

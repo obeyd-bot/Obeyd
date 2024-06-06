@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import insert
 from obeyd.likes.callbacks import LikeCallback
 from obeyd.likes.enums import SCORES
 from obeyd.models import Like, async_session
-from tasks import notify_creator_like_joke
+from obeyd.tasks import notify_creator_like_joke
 
 likes_router = Router()
 
