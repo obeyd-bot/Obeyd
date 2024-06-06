@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+import sentry_sdk
 from aiogram import Dispatcher
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -26,6 +27,17 @@ async def cancel_handler(message: Message, state: FSMContext) -> None:
 
 
 async def main() -> None:
+    sentry_sdk.init(
+        dsn="https://3f61d721091e147adc6ee6028f06aa25@o673833.ingest.us.sentry.io/4507386459127808",
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        traces_sample_rate=1.0,
+        # Set profiles_sample_rate to 1.0 to profile 100%
+        # of sampled transactions.
+        # We recommend adjusting this value in production.
+        profiles_sample_rate=1.0,
+    )
+
     storage = RedisStorage(redis=Redis(db="1"))
     dp = Dispatcher(storage=storage)
 
