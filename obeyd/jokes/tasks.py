@@ -3,8 +3,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from obeyd.bot import new_bot
 from obeyd.jokes.callbacks import ReviewJokeCallback
 
-REVIEW_SUBMITTED_JOKES_CHAT_ID = "-1002196165890"
-REVIEW_SUBMITTED_JOKES_TOPIC_ID = 34
+REVIEW_SUBMITTED_JOKES_CHAT_ID = "-4226479784"
 
 SUBMIT_JOKE_NOTIF_ADMIN_MESSAGE_TEMPLATE = """
 جوک جدیدی از طرف {from_user} ارسال شده است:
@@ -18,7 +17,6 @@ async def notify_admin_submit_joke_async(joke_id, joke_text, from_user):
 
     await bot.send_message(
         chat_id=REVIEW_SUBMITTED_JOKES_CHAT_ID,
-        message_thread_id=REVIEW_SUBMITTED_JOKES_TOPIC_ID,
         text=SUBMIT_JOKE_NOTIF_ADMIN_MESSAGE_TEMPLATE.format(
             from_user=from_user,
             joke_text=joke_text,
