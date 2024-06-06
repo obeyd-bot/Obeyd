@@ -1,7 +1,7 @@
 import datetime
 import os
 
-from sqlalchemy import ForeignKey, UniqueConstraint, func
+from sqlalchemy import BigInteger, ForeignKey, UniqueConstraint, func
 from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import expression
@@ -18,7 +18,9 @@ class Base(AsyncAttrs, DeclarativeBase):
 class User(Base):
     __tablename__ = "users"
 
-    user_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
+    user_id: Mapped[int] = mapped_column(
+        BigInteger, primary_key=True, autoincrement=False
+    )
 
     nickname: Mapped[str] = mapped_column(
         unique=True, nullable=True, server_default=None
@@ -33,7 +35,7 @@ class Joke(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str] = mapped_column(String(280))
 
-    creator_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"))
+    creator_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.user_id"))
     creator: Mapped[User] = relationship()
 
     accepted: Mapped[bool] = mapped_column(server_default=expression.false())
@@ -50,7 +52,7 @@ class SeenJoke(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     user_id: Mapped[int]
-    joke_id: Mapped[int] = mapped_column(ForeignKey("jokes.id"))
+    joke_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("jokes.id"))
     joke: Mapped[Joke] = relationship()
 
     seen_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
@@ -64,7 +66,8 @@ class Like(Base):
     __tablename__ = "likes"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int]
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.user_id"))
+    user: Mapped[User] = relationship()
     joke_id: Mapped[int] = mapped_column(ForeignKey("jokes.id"))
     joke: Mapped[Joke] = relationship()
     score: Mapped[int]
