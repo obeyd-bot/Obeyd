@@ -1,4 +1,4 @@
-.PHONY: db-upgrade db-revision start-server start-celery-worker start-admin-panel
+.PHONY: db-upgrade db-revision start-server start-celery-worker start-admin-panel clean
 
 db-upgrade:
 	alembic upgrade head
@@ -14,3 +14,6 @@ start-celery-worker:
 
 start-admin-panel:
 	python3 admin.py
+
+clean:
+	find . -type d -name "__pycache__" | xargs rm -r
