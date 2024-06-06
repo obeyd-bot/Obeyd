@@ -7,7 +7,7 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     Message,
 )
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
@@ -135,8 +135,6 @@ async def review_joke_callback_handler(
                 .where(Joke.id == callback_data.joke_id)
                 .values(accepted=False)
             )
-        elif callback_data.command == "delete":
-            await session.execute(delete(Joke).where(Joke.id == callback_data.joke_id))
         else:
             await query.answer(text="دوباره تلاش کنید.")
         await session.commit()

@@ -25,12 +25,6 @@ async def notify_admin_submit_joke_async(joke_id, joke_text, from_user):
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text="حذف",
-                        callback_data=ReviewJokeCallback(
-                            joke_id=joke_id, command="delete"
-                        ).pack(),
-                    ),
-                    InlineKeyboardButton(
                         text="رد",
                         callback_data=ReviewJokeCallback(
                             joke_id=joke_id, command="reject"
