@@ -4,6 +4,7 @@ import json
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from celery import Celery
 
+from app import ReviewJokeCallback
 from telegram import new_bot
 
 app = Celery("tasks", broker="redis://localhost:6379/0")
@@ -32,21 +33,21 @@ async def notify_admin_submit_joke_async(joke_id, joke_text, from_user):
                 [
                     InlineKeyboardButton(
                         text="تایید",
-                        callback_data=json.dumps(
-                            {
-                                "type": "reject_joke",
-                                "joke_id": joke_id,
-                            }
-                        ),
+                        callback_data=ReviewJokeCallback(
+                            joke_id=joke_id, command="accept"
+                        ).pack(),
                     ),
                     InlineKeyboardButton(
                         text="رد",
-                        callback_data=json.dumps(
-                            {
-                                "type": "accept_joke",
-                                "joke_id": joke_id,
-                            }
-                        ),
+                        callback_data=ReviewJokeCallback(
+                            joke_id=joke_id, command="reject"
+                        ).pack(),
+                    ),
+                    InlineKeyboardButton(
+                        text="حذف",
+                        callback_data=ReviewJokeCallback(
+                            joke_id=joke_id, command="delete"
+                        ).pack(),
                     ),
                 ]
             ]
