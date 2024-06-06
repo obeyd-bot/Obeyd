@@ -1,11 +1,13 @@
 import asyncio
-import json
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from celery import Celery
+from sqlalchemy import select
 
 from callbacks import ReviewJokeCallback
 from telegram import new_bot
+
+from models import Joke, async_session
 
 app = Celery("tasks", broker="redis://localhost:6379/0")
 
@@ -17,6 +19,30 @@ SUBMIT_JOKE_NOTIF_ADMIN_MESSAGE_TEMPLATE = """
 
 {joke_text}
 """
+
+
+LIKE_JOKE_NOTIF_CREATOR_MESSAGE_TEMPLATE = """
+کسی به جوکت امتیاز {score} رو داده. متن جوک:
+
+{joke_text}
+"""
+
+
+async def notify_creator_like_joke_async(joke_id, score):
+    bot = new_bot()
+
+    async with async_session() as session:
+        joke = await session.scalar(select(Joke).where(Joke.id == joke_id))
+
+    if joke is None:
+        return
+
+    await bot.send_message(
+        chat_id=joke.creator_user_id,
+        text=LIKE_JOKE_NOTIF_CREATOR_MESSAGE_TEMPLATE.format(
+            score=score, joke_text=joke.text
+        ),
+    )
 
 
 async def notify_admin_submit_joke_async(joke_id, joke_text, from_user):
@@ -53,6 +79,11 @@ async def notify_admin_submit_joke_async(joke_id, joke_text, from_user):
             ]
         ),
     )
+
+
+@app.task
+def notify_creator_like_joke(joke_id, score):
+    asyncio.run(notify_creator_like_joke_async(joke_id, score))
 
 
 @app.task

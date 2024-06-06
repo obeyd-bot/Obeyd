@@ -20,7 +20,7 @@ from sqlalchemy.sql import expression
 
 from callbacks import LikeCallback, ReviewJokeCallback
 from models import Joke, Like, async_session
-from tasks import notify_admin_submit_joke
+from tasks import notify_admin_submit_joke, notify_creator_like_joke
 from telegram import new_bot
 
 storage = MemoryStorage()
@@ -137,6 +137,8 @@ async def like_callback_handler(
             )
         )
         await session.commit()
+
+    notify_creator_like_joke.delay(joke_id, callback_data.score)
 
     await query.answer(text=SCORES[str(callback_data.score)]["notif"])
 
