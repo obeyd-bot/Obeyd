@@ -16,7 +16,7 @@ async def notify_creator_like_joke_async(joke_id, score):
     async with async_session() as session:
         joke = await session.scalar(select(Joke).where(Joke.id == joke_id))
 
-    if joke is None:
+    if joke is None or joke.creator_user_id is None:
         return
 
     await bot.send_message(
