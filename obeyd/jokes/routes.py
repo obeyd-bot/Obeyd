@@ -130,7 +130,7 @@ async def review_joke_callback_handler(
                 .where(Joke.id == callback_data.joke_id)
                 .values(accepted=True)
             )
-            await query.message.react([ReactionTypeEmoji(emoji="👎")])  # type: ignore
+            await query.message.react([ReactionTypeEmoji(emoji="👍")])  # type: ignore
             await query.answer(text="تایید شد.")
         elif callback_data.command == "reject":
             await session.execute(
