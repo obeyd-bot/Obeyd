@@ -48,26 +48,36 @@ SCORES = {
 @dp.message(Command("new_joke"))
 async def new_joke_handler(message: Message) -> None:
     async with async_session() as session:
-        result = await session.execute(
+        jokes_scores = (
+            select(Like.joke_id, func.avg(Like.score).alias("avg_score"))
+            .group_by(Like.joke_id)
+            .subquery()
+        )
+        joke = await session.scalar(
             select(Joke)
             .filter(Joke.accepted == expression.true())
-            .order_by(func.random())
+            .join(
+                jokes_scores,
+                Joke.id == jokes_scores.c.joke_id,
+                isouter=True,
+            )
+            .order_by(jokes_scores.c.avg_score)
+            .limit(1)
         )
 
-    selected_joke = result.scalar()
-    if not selected_joke:
+    if not joke:
         await message.answer("جوکی ندارم که برات بگم :(")
         return
 
     await message.answer(
-        selected_joke.text,
+        joke.text,
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
                         text=score_data["emoji"],
                         callback_data=LikeCallback(
-                            joke_id=selected_joke.id, score=int(score)
+                            joke_id=joke.id, score=int(score)
                         ).pack(),
                     )
                     for score, score_data in SCORES.items()
