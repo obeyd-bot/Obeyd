@@ -21,8 +21,7 @@ from aiogram.types import (
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
-from db import async_session
-from models import Joke, Like
+from models import Joke, Like, async_session
 
 storage = MemoryStorage()
 

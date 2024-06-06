@@ -1,9 +1,13 @@
 import datetime
+import os
 
 from sqlalchemy import ForeignKey, UniqueConstraint, func
-from sqlalchemy.ext.asyncio import AsyncAttrs
+from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import String
+
+engine = create_async_engine(os.environ["SQLALCHEMY_DATABASE_URI"])
+async_session = async_sessionmaker(engine, expire_on_commit=False)
 
 
 class Base(AsyncAttrs, DeclarativeBase):
