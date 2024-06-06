@@ -138,7 +138,7 @@ async def like_callback_handler(
         )
         await session.commit()
 
-    notify_creator_like_joke.delay(joke_id, callback_data.score)
+    notify_creator_like_joke.delay(callback_data.joke_id, callback_data.score)
 
     await query.answer(text=SCORES[str(callback_data.score)]["notif"])
 
