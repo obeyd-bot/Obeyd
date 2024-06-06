@@ -5,7 +5,7 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from flask_sqlalchemy import SQLAlchemy
 
-from models import Base, Joke, Like, SeenJoke, User
+from obeyd.models import Base, Joke, Like, SeenJoke, User
 
 if __name__ == "__main__":
     app = Flask(__name__)

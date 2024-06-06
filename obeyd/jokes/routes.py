@@ -1,72 +1,26 @@
-import asyncio
-import logging
-import sys
-
-from aiogram import Dispatcher, Router, html
-from aiogram.filters import Command, CommandStart
+from aiogram import Router
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import (
     CallbackQuery,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
-    ReplyKeyboardRemove,
 )
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.sql import expression
 
-from callbacks import LikeCallback, ReviewJokeCallback
-from models import Joke, Like, SeenJoke, User, async_session
-from tasks import notify_admin_submit_joke, notify_creator_like_joke
-from telegram import new_bot
+from obeyd.jokes.callbacks import ReviewJokeCallback
+from obeyd.jokes.states import NewJokeForm
+from obeyd.likes.callbacks import LikeCallback
+from obeyd.likes.enums import SCORES
+from obeyd.models import Joke, Like, SeenJoke, async_session
+from tasks import notify_admin_submit_joke
 
-storage = MemoryStorage()
-
-dp = Dispatcher(storage=storage)
-
-submit_joke_router = Router()
+jokes_router = Router()
 
 
-class NewUserForm(StatesGroup):
-    nickname = State()
-
-
-@dp.message(CommandStart())
-async def command_start_handler(message: Message, state: FSMContext) -> None:
-    assert message.from_user
-    await state.set_state(NewUserForm.nickname)
-    await message.answer(
-        f"سلام! من عبید زاکانی هستم. میتونم برات جوک بگم. چطوری صدات کنم؟"
-    )
-
-
-@dp.message(NewUserForm.nickname)
-async def command_start_nickname_handler(message: Message, state: FSMContext) -> None:
-    data = await state.update_data(nickname=message.text)
-    await state.clear()
-
-    async with async_session() as session:
-        await session.execute(insert(User).values(nickname=data["nickname"]))
-        await session.commit()
-
-    await message.answer(
-        f"خوشوقتم {data['nickname']} :) حالا /new_joke رو برام بنویس تا برات جوک بگم."
-    )
-
-
-SCORES = {
-    "1": {"emoji": "💩", "notif": "💩💩💩"},
-    "2": {"emoji": "😐", "notif": "😐😐😐"},
-    "3": {"emoji": "🙂", "notif": "🙂🙂🙂"},
-    "4": {"emoji": "😁", "notif": "😁😁😁"},
-    "5": {"emoji": "😂", "notif": "😂😂😂"},
-}
-
-
-@dp.message(Command("new_joke"))
+@jokes_router.message(Command("new_joke"))
 async def new_joke_handler(message: Message) -> None:
     assert message.from_user
 
@@ -83,7 +37,7 @@ async def new_joke_handler(message: Message) -> None:
         )
         joke = await session.scalar(
             select(Joke)
-            .filter(Joke.accepted == expression.true())
+            .filter(Joke.accepted.is_(True))
             .join(seen_jokes, Joke.id == seen_jokes.c.joke_id, isouter=True)
             .where(seen_jokes.c.joke_id.is_(None))
             .join(
@@ -125,29 +79,13 @@ async def new_joke_handler(message: Message) -> None:
         await session.commit()
 
 
-class NewJokeForm(StatesGroup):
-    joke = State()
-
-
-@submit_joke_router.message(Command("submit_joke"))
+@jokes_router.message(Command("submit_joke"))
 async def submit_joke_start_handler(message: Message, state: FSMContext) -> None:
     await state.set_state(NewJokeForm.joke)
-    await message.answer(
-        "جوکت رو توی یک پیام برام بنویس", reply_markup=ReplyKeyboardRemove()
-    )
+    await message.answer("جوکت رو توی یک پیام برام بنویس")
 
 
-@dp.message(Command("cancel"))
-async def cancel_handler(message: Message, state: FSMContext) -> None:
-    current_state = await state.get_state()
-    if current_state is None:
-        return
-
-    await state.clear()
-    await message.answer("اشکالی نداره :)", reply_markup=ReplyKeyboardRemove())
-
-
-@submit_joke_router.message(NewJokeForm.joke)
+@jokes_router.message(NewJokeForm.joke)
 async def submit_joke_end_handler(message: Message, state: FSMContext) -> None:
     assert message.from_user
 
@@ -168,30 +106,7 @@ async def submit_joke_end_handler(message: Message, state: FSMContext) -> None:
     await message.answer("😂😂😂")
 
 
-@dp.callback_query(LikeCallback.filter())
-async def like_callback_handler(
-    query: CallbackQuery, callback_data: LikeCallback
-) -> None:
-    async with async_session() as session:
-        await session.execute(
-            insert(Like)
-            .values(
-                user_id=query.from_user.id,
-                joke_id=callback_data.joke_id,
-                score=callback_data.score,
-            )
-            .on_conflict_do_update(
-                constraint="user_id_joke_id_key", set_={"score": callback_data.score}
-            )
-        )
-        await session.commit()
-
-    notify_creator_like_joke.delay(callback_data.joke_id, callback_data.score)
-
-    await query.answer(text=SCORES[str(callback_data.score)]["notif"])
-
-
-@dp.callback_query(ReviewJokeCallback.filter())
+@jokes_router.callback_query(ReviewJokeCallback.filter())
 async def review_joke_callback_handler(
     query: CallbackQuery, callback_data: ReviewJokeCallback
 ):
@@ -217,16 +132,3 @@ async def review_joke_callback_handler(
         await session.commit()
 
     await query.answer(text="انجام شد.")
-
-
-async def main() -> None:
-    bot = new_bot()
-
-    dp.include_router(submit_joke_router)
-
-    await dp.start_polling(bot)
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-    asyncio.run(main())
