@@ -20,6 +20,7 @@ from aiogram.types import (
 )
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.sql import expression
 
 from models import Joke, Like, async_session
 
@@ -48,7 +49,9 @@ SCORES = {
 async def new_joke_handler(message: Message) -> None:
     async with async_session() as session:
         result = await session.execute(
-            select(Joke).filter(Joke.accepted == True).order_by(func.random())
+            select(Joke)
+            .filter(Joke.accepted == expression.true())
+            .order_by(func.random())
         )
 
     selected_joke = result.scalar()

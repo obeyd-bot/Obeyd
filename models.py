@@ -4,6 +4,7 @@ import os
 from sqlalchemy import ForeignKey, UniqueConstraint, func
 from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.sql import expression
 from sqlalchemy.types import String
 
 engine = create_async_engine(os.environ["SQLALCHEMY_DATABASE_URI"])
@@ -22,7 +23,7 @@ class Joke(Base):
 
     creator_user_id: Mapped[int] = mapped_column(nullable=True)
 
-    accepted: Mapped[bool] = mapped_column(default=False)
+    accepted: Mapped[bool] = mapped_column(server_default=expression.false())
 
     updated_at: Mapped[datetime.datetime] = mapped_column(
         server_default=func.now(), server_onupdate=func.now()
