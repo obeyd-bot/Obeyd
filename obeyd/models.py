@@ -51,7 +51,8 @@ class SeenJoke(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    user_id: Mapped[int]
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.user_id"))
+    user: Mapped[User] = relationship()
     joke_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("jokes.id"))
     joke: Mapped[Joke] = relationship()
 
