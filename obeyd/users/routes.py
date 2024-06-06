@@ -21,11 +21,15 @@ async def command_start_handler(message: Message, state: FSMContext) -> None:
 
 @users_router.message(NewUserForm.nickname)
 async def command_start_nickname_handler(message: Message, state: FSMContext) -> None:
+    assert message.from_user
+
     data = await state.update_data(nickname=message.text)
     await state.clear()
 
     async with async_session() as session:
-        await session.execute(insert(User).values(nickname=data["nickname"]))
+        await session.execute(
+            insert(User).values(user_id=message.from_user.id, nickname=data["nickname"])
+        )
         await session.commit()
 
     await message.answer(
