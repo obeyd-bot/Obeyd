@@ -22,6 +22,8 @@ class Joke(Base):
 
     creator_user_id: Mapped[int] = mapped_column(nullable=True)
 
+    accepted: Mapped[bool] = mapped_column(default=False)
+
     updated_at: Mapped[datetime.datetime] = mapped_column(
         server_default=func.now(), server_onupdate=func.now()
     )

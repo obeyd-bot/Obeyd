@@ -47,7 +47,9 @@ SCORES = {
 @dp.message(Command("new_joke"))
 async def new_joke_handler(message: Message) -> None:
     async with async_session() as session:
-        result = await session.execute(select(Joke).order_by(func.random()))
+        result = await session.execute(
+            select(Joke).filter(Joke.accepted == True).order_by(func.random())
+        )
 
     selected_joke = result.scalar()
     if not selected_joke:
