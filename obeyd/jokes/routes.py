@@ -49,32 +49,31 @@ async def new_joke_handler(message: Message) -> None:
             .limit(1)
         )
 
-    if not joke:
-        await message.answer("جوکی ندارم که برات بگم :(")
-        return
+        if not joke:
+            await message.answer("جوکی ندارم که برات بگم :(")
+            return
 
-    await message.answer(
-        f"""
-{joke.text}
+        await message.answer(
+            f"""
+    {joke.text}
 
-{html.bold(joke.creator.nickname)}
-""",
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text=score_data["emoji"],
-                        callback_data=LikeCallback(
-                            joke_id=joke.id, score=int(score)
-                        ).pack(),
-                    )
-                    for score, score_data in SCORES.items()
+    {html.bold(joke.creator.nickname)}
+    """,
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(
+                            text=score_data["emoji"],
+                            callback_data=LikeCallback(
+                                joke_id=joke.id, score=int(score)
+                            ).pack(),
+                        )
+                        for score, score_data in SCORES.items()
+                    ]
                 ]
-            ]
-        ),
-    )
+            ),
+        )
 
-    async with async_session() as session:
         await session.execute(
             insert(SeenJoke)
             .values(user_id=message.from_user.id, joke_id=joke.id)
