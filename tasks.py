@@ -4,7 +4,7 @@ import json
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from celery import Celery
 
-from app import ReviewJokeCallback
+from callbacks import ReviewJokeCallback
 from telegram import new_bot
 
 app = Celery("tasks", broker="redis://localhost:6379/0")

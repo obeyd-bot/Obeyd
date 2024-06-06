@@ -1,12 +1,9 @@
 import asyncio
-import json
 import logging
 import sys
-from typing import Literal
 
 from aiogram import Dispatcher, Router, html
 from aiogram.filters import Command, CommandStart
-from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -21,6 +18,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql import expression
 
+from callbacks import LikeCallback, ReviewJokeCallback
 from models import Joke, Like, async_session
 from tasks import notify_admin_submit_joke
 from telegram import new_bot
@@ -45,16 +43,6 @@ SCORES = {
     "4": {"emoji": "😁", "notif": "😁😁😁"},
     "5": {"emoji": "😂", "notif": "😂😂😂"},
 }
-
-
-class LikeCallback(CallbackData, prefix="like"):
-    joke_id: int
-    score: int
-
-
-class ReviewJokeCallback(CallbackData, prefix="review-joke"):
-    joke_id: int
-    command: str
 
 
 @dp.message(Command("new_joke"))
