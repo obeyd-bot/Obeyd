@@ -6,6 +6,7 @@ from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Message,
+    ReactionTypeEmoji,
 )
 from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
@@ -129,14 +130,16 @@ async def review_joke_callback_handler(
                 .where(Joke.id == callback_data.joke_id)
                 .values(accepted=True)
             )
+            await query.message.react([ReactionTypeEmoji(emoji="👎")])  # type: ignore
+            await query.answer(text="تایید شد.")
         elif callback_data.command == "reject":
             await session.execute(
                 update(Joke)
                 .where(Joke.id == callback_data.joke_id)
                 .values(accepted=False)
             )
+            await query.message.react([ReactionTypeEmoji(emoji="👎")])  # type: ignore
+            await query.answer(text="رد شد.")
         else:
-            await query.answer(text="دوباره تلاش کنید.")
+            await query.answer(text="مشکلی پیش آمده است.")
         await session.commit()
-
-    await query.answer(text="انجام شد.")
