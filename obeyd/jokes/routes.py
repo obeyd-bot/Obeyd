@@ -1,4 +1,4 @@
-from aiogram import Router
+from aiogram import Router, html
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
@@ -54,7 +54,11 @@ async def new_joke_handler(message: Message) -> None:
         return
 
     await message.answer(
-        joke.text,
+        f"""
+{joke.text}
+
+{html.bold(joke.creator.nickname)}
+""",
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
                 [

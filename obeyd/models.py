@@ -15,13 +15,26 @@ class Base(AsyncAttrs, DeclarativeBase):
     pass
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    user_id: Mapped[int] = mapped_column(primary_key=True)
+
+    nickname: Mapped[str] = mapped_column(
+        unique=True, nullable=True, server_default=None
+    )
+
+    joined_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
+
+
 class Joke(Base):
     __tablename__ = "jokes"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str] = mapped_column(String(280))
 
-    creator_user_id: Mapped[int] = mapped_column(nullable=True)
+    creator_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"))
+    creator: Mapped[User] = relationship()
 
     accepted: Mapped[bool] = mapped_column(server_default=expression.false())
 
@@ -45,18 +58,6 @@ class SeenJoke(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "joke_id", name="seen_jokes_user_id_joke_id_key"),
     )
-
-
-class User(Base):
-    __tablename__ = "users"
-
-    user_id: Mapped[int] = mapped_column(primary_key=True)
-
-    nickname: Mapped[str] = mapped_column(
-        unique=True, nullable=True, server_default=None
-    )
-
-    joined_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
 
 
 class Like(Base):
