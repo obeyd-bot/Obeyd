@@ -55,9 +55,16 @@ async def new_joke_handler(message: Message) -> None:
             .group_by(Like.joke_id)
             .subquery()
         )
+        seen_jokes = (
+            select(SeenJoke.joke_id)
+            .where(SeenJoke.user_id == message.from_user.id)
+            .subquery()
+        )
         joke = await session.scalar(
             select(Joke)
             .filter(Joke.accepted == expression.true())
+            .join(seen_jokes, Joke.id == seen_jokes.c.joke_id, isouter=True)
+            .where(seen_jokes.c.joke_id.is_(None))
             .join(
                 jokes_scores,
                 Joke.id == jokes_scores.c.joke_id,
