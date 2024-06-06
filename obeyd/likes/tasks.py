@@ -3,11 +3,13 @@ from sqlalchemy import select
 from obeyd.bot import new_bot
 from obeyd.models import Joke, async_session
 
-LIKE_JOKE_NOTIF_CREATOR_MESSAGE_TEMPLATE = """
-کسی به جوکت امتیاز {score} رو داده. متن جوک:
-
-{joke_text}
-"""
+LIKE_MESSAGE_TEMPLATE_BY_SCORE = {
+    5: "یک نفر به جوک شما خیلی خندید 😂",
+    4: "یک نفر به جوک شما خندید 😁",
+    3: "یک نفر به جوک شما لبخند زد 🙂",
+    2: "یک نفر متوجه جوک شما نشد 😐",
+    1: "یک نفر از جوک شما خوشش نیومد 💩",
+}
 
 
 async def notify_creator_like_joke_async(joke_id, score):
@@ -21,7 +23,9 @@ async def notify_creator_like_joke_async(joke_id, score):
 
     await bot.send_message(
         chat_id=joke.creator_user_id,
-        text=LIKE_JOKE_NOTIF_CREATOR_MESSAGE_TEMPLATE.format(
-            score=score, joke_text=joke.text
-        ),
+        text=f"""
+{LIKE_MESSAGE_TEMPLATE_BY_SCORE[score]}
+
+جوک شما: {joke.text}
+""",
     )
