@@ -4,9 +4,7 @@ import logging
 import os
 import sys
 
-from aiogram import Bot, Dispatcher, Router, html
-from aiogram.client.default import DefaultBotProperties
-from aiogram.enums import ParseMode
+from aiogram import Dispatcher, Router, html
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -24,6 +22,7 @@ from sqlalchemy.sql import expression
 
 from models import Joke, Like, async_session
 from tasks import notify_admin_submit_joke
+from telegram import new_bot
 
 storage = MemoryStorage()
 
@@ -144,10 +143,7 @@ async def like_handler(query: CallbackQuery) -> None:
 
 
 async def main() -> None:
-    bot = Bot(
-        token=os.environ["API_TOKEN"],
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-    )
+    bot = new_bot()
 
     dp.include_router(submit_joke_router)
 
