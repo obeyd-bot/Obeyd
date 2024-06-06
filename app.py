@@ -49,7 +49,7 @@ SCORES = {
 async def new_joke_handler(message: Message) -> None:
     async with async_session() as session:
         jokes_scores = (
-            select(Like.joke_id, func.avg(Like.score).alias("avg_score"))
+            select(Like.joke_id, func.avg(Like.score).label("avg_score"))
             .group_by(Like.joke_id)
             .subquery()
         )
