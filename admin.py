@@ -5,7 +5,7 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from flask_sqlalchemy import SQLAlchemy
 
-from models import Base, Joke, Like, SeenJoke
+from models import Base, Joke, Like, SeenJoke, User
 
 if __name__ == "__main__":
     app = Flask(__name__)
@@ -19,6 +19,7 @@ if __name__ == "__main__":
 
     admin = Admin(app, name="obeyd", template_mode="bootstrap3")
     admin.add_view(ModelView(Joke, db.session))
+    admin.add_view(ModelView(User, db.session))
     admin.add_view(ModelView(Like, db.session))
     admin.add_view(ModelView(SeenJoke, db.session))
 
