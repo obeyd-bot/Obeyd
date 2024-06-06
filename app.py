@@ -1,11 +1,12 @@
 import asyncio
 import json
 import logging
-import os
 import sys
+from typing import Literal
 
 from aiogram import Dispatcher, Router, html
 from aiogram.filters import Command, CommandStart
+from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -16,7 +17,7 @@ from aiogram.types import (
     Message,
     ReplyKeyboardRemove,
 )
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql import expression
 
@@ -46,6 +47,16 @@ SCORES = {
 }
 
 
+class LikeCallback(CallbackData, prefix="like"):
+    joke_id: int
+    score: int
+
+
+class ReviewJokeCallback(CallbackData, prefix="review-joke"):
+    joke_id: int
+    command: str
+
+
 @dp.message(Command("new_joke"))
 async def new_joke_handler(message: Message) -> None:
     async with async_session() as session:
@@ -67,9 +78,9 @@ async def new_joke_handler(message: Message) -> None:
                 [
                     InlineKeyboardButton(
                         text=score_data["emoji"],
-                        callback_data=json.dumps(
-                            {"score": int(score), "joke_id": selected_joke.id}
-                        ),
+                        callback_data=LikeCallback(
+                            joke_id=selected_joke.id, score=int(score)
+                        ).pack(),
                     )
                     for score, score_data in SCORES.items()
                 ]
@@ -120,26 +131,53 @@ async def submit_joke_end_handler(message: Message, state: FSMContext) -> None:
     await message.answer("😂😂😂")
 
 
-@dp.callback_query()
-async def like_handler(query: CallbackQuery) -> None:
-    assert query.data
-
-    user_id = query.from_user.id
-    data = json.loads(query.data)
-    joke_id = data["joke_id"]
-    score = data["score"]
-
+@dp.callback_query(LikeCallback.filter())
+async def like_callback_handler(
+    query: CallbackQuery, callback_data: LikeCallback
+) -> None:
     async with async_session() as session:
         await session.execute(
             insert(Like)
-            .values(user_id=user_id, joke_id=joke_id, score=score)
+            .values(
+                user_id=query.from_user.id,
+                joke_id=callback_data.joke_id,
+                score=callback_data.score,
+            )
             .on_conflict_do_update(
-                constraint="user_id_joke_id_key", set_={"score": score}
+                constraint="user_id_joke_id_key", set_={"score": callback_data.score}
             )
         )
         await session.commit()
 
-    await query.answer(text=SCORES[str(score)]["notif"])
+    await query.answer(text=SCORES[str(callback_data.score)]["notif"])
+
+
+@dp.callback_query(ReviewJokeCallback.filter())
+async def review_joke_callback_handler(
+    query: CallbackQuery, callback_data: ReviewJokeCallback
+):
+    # TODO: check if the callback is sent from admin users
+
+    async with async_session() as session:
+        if callback_data.command == "accept":
+            await session.execute(
+                update(Joke)
+                .where(Joke.id == callback_data.joke_id)
+                .values(accepted=True)
+            )
+        elif callback_data.command == "reject":
+            await session.execute(
+                update(Joke)
+                .where(Joke.id == callback_data.joke_id)
+                .values(accepted=False)
+            )
+        elif callback_data.command == "delete":
+            await session.execute(delete(Joke).where(Joke.id == callback_data.joke_id))
+        else:
+            await query.answer(text="دوباره تلاش کنید.")
+        await session.commit()
+
+    await query.answer(text="انجام شد.")
 
 
 async def main() -> None:
