@@ -23,6 +23,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql import expression
 
 from models import Joke, Like, async_session
+from tasks import notify_admin_submit_joke
 
 storage = MemoryStorage()
 
@@ -111,6 +112,8 @@ async def submit_joke_end_handler(message: Message, state: FSMContext) -> None:
         )
         session.add(joke)
         await session.commit()
+
+    notify_admin_submit_joke.delay(data["joke"], message.from_user.full_name)
 
     await message.answer("😂😂😂")
 
