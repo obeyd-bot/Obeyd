@@ -13,7 +13,7 @@ class AuthenticateMiddleware(BaseMiddleware):
             return await handler(event, data)
 
         async with async_session() as session:
-            data["user"] = find_user_by_id(session, event.from_user.id)
+            data["user"] = await find_user_by_id(session, event.from_user.id)
             return await handler(event, data)
 
 
