@@ -31,6 +31,22 @@ class Joke(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
 
 
+class SeenJoke:
+    __tablename__ = "seen_jokes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    user_id: Mapped[int]
+    joke_id: Mapped[int] = mapped_column(ForeignKey("jokes.id"))
+    joke: Mapped[Joke] = relationship()
+
+    seen_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "joke_id", name="user_id_joke_id_key"),
+    )
+
+
 class Like(Base):
     __tablename__ = "likes"
 

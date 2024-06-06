@@ -19,7 +19,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql import expression
 
 from callbacks import LikeCallback, ReviewJokeCallback
-from models import Joke, Like, async_session
+from models import Joke, Like, SeenJoke, async_session
 from tasks import notify_admin_submit_joke, notify_creator_like_joke
 from telegram import new_bot
 
@@ -47,6 +47,8 @@ SCORES = {
 
 @dp.message(Command("new_joke"))
 async def new_joke_handler(message: Message) -> None:
+    assert message.from_user
+
     async with async_session() as session:
         jokes_scores = (
             select(Like.joke_id, func.avg(Like.score).label("avg_score"))
@@ -85,6 +87,14 @@ async def new_joke_handler(message: Message) -> None:
             ]
         ),
     )
+
+    async with async_session() as session:
+        await session.execute(
+            insert(SeenJoke)
+            .values(user_id=message.from_user.id, joke_id=joke.id)
+            .on_conflict_do_nothing(constraint="user_id_joke_id_key")
+        )
+        await session.commit()
 
 
 class NewJokeForm(StatesGroup):
