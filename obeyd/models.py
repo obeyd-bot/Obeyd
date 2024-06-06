@@ -33,7 +33,7 @@ class Joke(Base):
     __tablename__ = "jokes"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    text: Mapped[str] = mapped_column(String(280))
+    text: Mapped[str] = mapped_column(String(3500))
 
     creator_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.user_id"))
     creator: Mapped[User] = relationship()
