@@ -58,9 +58,9 @@ async def notify_admin_submit_joke_async(joke_id, joke_text, from_user):
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text="تایید",
+                        text="حذف",
                         callback_data=ReviewJokeCallback(
-                            joke_id=joke_id, command="accept"
+                            joke_id=joke_id, command="delete"
                         ).pack(),
                     ),
                     InlineKeyboardButton(
@@ -70,9 +70,9 @@ async def notify_admin_submit_joke_async(joke_id, joke_text, from_user):
                         ).pack(),
                     ),
                     InlineKeyboardButton(
-                        text="حذف",
+                        text="تایید",
                         callback_data=ReviewJokeCallback(
-                            joke_id=joke_id, command="delete"
+                            joke_id=joke_id, command="accept"
                         ).pack(),
                     ),
                 ]
