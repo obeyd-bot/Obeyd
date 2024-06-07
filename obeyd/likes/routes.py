@@ -8,6 +8,7 @@ from obeyd.likes.enums import SCORES
 from obeyd.middlewares import AuthenticateMiddleware, AuthorizeMiddleware
 from obeyd.models import Like, async_session
 from obeyd.tasks import notify_creator_like_joke
+from obeyd.users.services import find_user_by_id
 
 likes_router = Router()
 likes_router.message.middleware(AuthenticateMiddleware())
@@ -21,6 +22,8 @@ async def like_callback_handler(
     query: CallbackQuery, callback_data: LikeCallback
 ) -> None:
     async with async_session() as session:
+        user = await find_user_by_id(session, query.from_user.id)
+
         try:
             await session.execute(
                 insert(Like).values(
@@ -34,6 +37,10 @@ async def like_callback_handler(
             await query.answer(text="قبلا به این جوک رای دادی!")
             return
 
-    notify_creator_like_joke.delay(callback_data.joke_id, callback_data.score)
+    notify_creator_like_joke.delay(
+        callback_data.joke_id,
+        callback_data.score,
+        "یک نفر" if user is None else user.nickname,
+    )
 
     await query.answer(text=SCORES[str(callback_data.score)]["notif"])
