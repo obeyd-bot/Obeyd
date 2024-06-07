@@ -25,7 +25,7 @@ async def notify_creator_like_joke_async(joke_id, score, from_user_nickname):
     await bot.send_message(
         chat_id=joke.creator_id,
         text=f"""
-{LIKE_MESSAGE_TEMPLATE_BY_SCORE[score].format(html.bold(joke.creator_nickname))}
+{LIKE_MESSAGE_TEMPLATE_BY_SCORE[score].format(name=html.bold(joke.creator_nickname))}
 
 جوک شما: {joke.text}
 """,
