@@ -59,7 +59,7 @@ async def command_set_nickname_start_handler(
     await message.answer(f"چطوری صدات کنم؟")
 
 
-@users_router.message(Command("setname"))
+@users_router.message(SetNicknameForm.nickname)
 async def command_set_nickname_end_handler(message: Message, state: FSMContext) -> None:
     assert message.from_user
 
