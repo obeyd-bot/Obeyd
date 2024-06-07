@@ -23,8 +23,8 @@ sentry_sdk.init(
 
 
 @app.task
-def notify_creator_like_joke(joke_id, score):
-    asyncio.run(notify_creator_like_joke_async(joke_id, score))
+def notify_creator_like_joke(joke_id, score, from_user_nickname):
+    asyncio.run(notify_creator_like_joke_async(joke_id, score, from_user_nickname))
 
 
 @app.task
