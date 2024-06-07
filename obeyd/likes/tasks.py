@@ -4,11 +4,11 @@ from obeyd.bot import new_bot
 from obeyd.models import Joke, async_session
 
 LIKE_MESSAGE_TEMPLATE_BY_SCORE = {
-    5: "یک نفر به جوک شما خیلی خندید 😂",
-    4: "یک نفر به جوک شما خندید 😁",
-    3: "یک نفر به جوک شما لبخند زد 🙂",
-    2: "یک نفر متوجه جوک شما نشد 😐",
-    1: "یک نفر از جوک شما خوشش نیومد 💩",
+    5: "{name} به جوک شما خیلی خندید 😂",
+    4: "{name} به جوک شما خندید 😁",
+    3: "{name} به جوک شما لبخند زد 🙂",
+    2: "{name} متوجه جوک شما نشد 😐",
+    1: "{name} از جوک شما خوشش نیومد 💩",
 }
 
 
@@ -24,7 +24,7 @@ async def notify_creator_like_joke_async(joke_id, score):
     await bot.send_message(
         chat_id=joke.creator_id,
         text=f"""
-{LIKE_MESSAGE_TEMPLATE_BY_SCORE[score]}
+{LIKE_MESSAGE_TEMPLATE_BY_SCORE[score].format(joke.creator_nickname)}
 
 جوک شما: {joke.text}
 """,
