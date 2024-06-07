@@ -38,7 +38,7 @@ jokes_router.callback_query.middleware(AuthorizeMiddleware())
 SHOW_RANDOM_JOKE_PROB = 0.5
 
 
-@jokes_router.message(Command("new_joke"))
+@jokes_router.message(Command("newjoke"))
 async def new_joke_handler(message: Message) -> None:
     assert message.from_user
 
@@ -85,7 +85,7 @@ async def new_joke_handler(message: Message) -> None:
         await session.commit()
 
 
-@jokes_router.message(Command("submit_joke"))
+@jokes_router.message(Command("submitjoke"))
 async def submit_joke_start_handler(message: Message, state: FSMContext) -> None:
     await state.set_state(NewJokeForm.joke)
     await message.answer("جوکت رو توی یک پیام برام بنویس")

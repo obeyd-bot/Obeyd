@@ -44,7 +44,7 @@ async def command_start_nickname_handler(message: Message, state: FSMContext) ->
         await session.commit()
 
     await message.answer(
-        f"خوشوقتم {data['nickname']} :) حالا /new_joke رو برام بنویس تا برات جوک بگم."
+        f"خوشوقتم {data['nickname']} :) حالا /newjoke رو برام بنویس تا برات جوک بگم."
     )
 
 
@@ -75,7 +75,7 @@ async def command_set_nickname_end_handler(message: Message, state: FSMContext) 
         await session.commit()
 
     await message.answer(
-        f"خوشوقتم {data['nickname']} :) حالا /new_joke رو برام بنویس تا برات جوک بگم."
+        f"خوشوقتم {data['nickname']} :) حالا /newjoke رو برام بنویس تا برات جوک بگم."
     )
 
 
