@@ -84,7 +84,7 @@ async def command_set_nickname_end_handler(message: Message, state: FSMContext) 
             await session.commit()
         except IntegrityError:
             await message.answer(
-                "این اسم رو کس دیگه ای استفاده کرده. دوباره دستور /setnickname رو بزن."
+                "این اسم رو کس دیگه ای استفاده کرده. دوباره دستور /setname رو بزن."
             )
 
     await message.answer(
