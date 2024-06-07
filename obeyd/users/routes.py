@@ -20,7 +20,7 @@ async def command_start_handler(message: Message, state: FSMContext) -> None:
         user = await find_user_by_id(session, message.from_user.id)
         if user is not None:
             await message.answer(
-                "ما قبلا با همدیگه آشنا شدیم. برای اینکه اسمت رو عوض کنی از دستور /setnickname استفاده کن."
+                "ما قبلا با همدیگه آشنا شدیم. برای اینکه اسمت رو عوض کنی از دستور /setname استفاده کن."
             )
             return
 
