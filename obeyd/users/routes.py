@@ -50,6 +50,7 @@ async def command_start_nickname_handler(message: Message, state: FSMContext) ->
             await message.answer(
                 "این اسم رو کس دیگه ای استفاده کرده. دوباره دستور /start رو بزن."
             )
+            return
 
     await message.answer(
         f"خوشوقتم {data['nickname']} :) حالا /newjoke رو برام بنویس تا برات جوک بگم."
@@ -86,6 +87,7 @@ async def command_set_nickname_end_handler(message: Message, state: FSMContext) 
             await message.answer(
                 "این اسم رو کس دیگه ای استفاده کرده. دوباره دستور /setname رو بزن."
             )
+            return
 
     await message.answer(
         f"خوشوقتم {data['nickname']} :) حالا /newjoke رو برام بنویس تا برات جوک بگم."
