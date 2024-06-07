@@ -1,10 +1,11 @@
 from aiogram import Router
-from aiogram.filters import CommandStart
+from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from sqlalchemy.dialects.postgresql import insert
 
 from obeyd.models import User, async_session
+from obeyd.users.services import find_user_by_id
 from obeyd.users.states import NewUserForm
 
 users_router = Router()
@@ -35,3 +36,14 @@ async def command_start_nickname_handler(message: Message, state: FSMContext) ->
     await message.answer(
         f"خوشوقتم {data['nickname']} :) حالا /new_joke رو برام بنویس تا برات جوک بگم."
     )
+
+
+@users_router.message(Command("whoami"))
+async def command_start_handler(message: Message) -> None:
+    assert message.from_user
+
+    async with async_session() as session:
+        user = await find_user_by_id(session, message.from_user.id)
+        assert user is not None
+
+    await message.answer(f"هنوز زوده آلزایمر بگیری {user.nickname}!")
