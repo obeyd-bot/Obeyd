@@ -19,6 +19,7 @@ from obeyd.likes.enums import SCORES
 from obeyd.middlewares import AuthenticateMiddleware, AuthorizeMiddleware
 from obeyd.models import Joke, Like, SeenJoke, async_session
 from obeyd.tasks import notify_admin_submit_joke
+from obeyd.users.services import find_user_by_id
 
 jokes_router = Router()
 jokes_router.message.middleware(AuthenticateMiddleware())
@@ -104,9 +105,13 @@ async def submit_joke_end_handler(message: Message, state: FSMContext) -> None:
     await state.clear()
 
     async with async_session() as session:
+        user = await find_user_by_id(session, message.from_user.id)
+        assert user is not None
+
         joke = Joke(
             text=data["joke"],
             creator_id=message.from_user.id,
+            creator_nickname=user.nickname,
         )
         session.add(joke)
         await session.commit()

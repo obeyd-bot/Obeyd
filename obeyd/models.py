@@ -11,6 +11,9 @@ engine = create_async_engine(os.environ["SQLALCHEMY_DATABASE_URI"])
 async_session = async_sessionmaker(engine, expire_on_commit=False)
 
 
+NICKNAME_MAX_LENGTH = 100
+
+
 class Base(AsyncAttrs, DeclarativeBase):
     pass
 
@@ -23,7 +26,7 @@ class User(Base):
     )
 
     nickname: Mapped[str] = mapped_column(
-        unique=True, nullable=True, server_default=None
+        String(NICKNAME_MAX_LENGTH), unique=True, nullable=True, server_default=None
     )
 
     joined_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
@@ -37,6 +40,8 @@ class Joke(Base):
 
     creator_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.user_id"))
     creator: Mapped[User] = relationship()
+
+    creator_nickname: Mapped[str] = mapped_column(String(NICKNAME_MAX_LENGTH))
 
     accepted: Mapped[bool] = mapped_column(server_default=expression.false())
 
