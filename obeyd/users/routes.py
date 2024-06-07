@@ -39,7 +39,7 @@ async def command_start_nickname_handler(message: Message, state: FSMContext) ->
 
 
 @users_router.message(Command("whoami"))
-async def command_start_handler(message: Message) -> None:
+async def command_whoami_handler(message: Message) -> None:
     assert message.from_user
 
     async with async_session() as session:
