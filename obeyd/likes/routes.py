@@ -1,6 +1,7 @@
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.types import CallbackQuery
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError
 
 from obeyd.likes.callbacks import LikeCallback
 from obeyd.likes.enums import SCORES
@@ -20,18 +21,18 @@ async def like_callback_handler(
     query: CallbackQuery, callback_data: LikeCallback
 ) -> None:
     async with async_session() as session:
-        await session.execute(
-            insert(Like)
-            .values(
-                user_id=query.from_user.id,
-                joke_id=callback_data.joke_id,
-                score=callback_data.score,
+        try:
+            await session.execute(
+                insert(Like).values(
+                    user_id=query.from_user.id,
+                    joke_id=callback_data.joke_id,
+                    score=callback_data.score,
+                )
             )
-            .on_conflict_do_update(
-                constraint="user_id_joke_id_key", set_={"score": callback_data.score}
-            )
-        )
-        await session.commit()
+            await session.commit()
+        except IntegrityError:
+            await query.answer(text="قبلا به این جوک رای دادی!")
+            return
 
     notify_creator_like_joke.delay(callback_data.joke_id, callback_data.score)
 
