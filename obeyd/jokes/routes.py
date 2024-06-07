@@ -1,3 +1,5 @@
+import random
+
 from aiogram import Router, html
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -8,16 +10,21 @@ from aiogram.types import (
     Message,
     ReactionTypeEmoji,
 )
-from sqlalchemy import func, select, update
+from sqlalchemy import update
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import selectinload
 
 from obeyd.jokes.callbacks import ReviewJokeCallback
+from obeyd.jokes.services import (
+    accepted_jokes,
+    filter_seen_jokes,
+    most_rated_joke,
+    random_joke,
+)
 from obeyd.jokes.states import NewJokeForm
 from obeyd.likes.callbacks import LikeCallback
 from obeyd.likes.enums import SCORES
 from obeyd.middlewares import AuthenticateMiddleware, AuthorizeMiddleware
-from obeyd.models import Joke, Like, SeenJoke, async_session
+from obeyd.models import Joke, SeenJoke, async_session
 from obeyd.tasks import notify_admin_submit_joke
 from obeyd.users.services import find_user_by_id
 
@@ -28,35 +35,22 @@ jokes_router.callback_query.middleware(AuthenticateMiddleware())
 jokes_router.callback_query.middleware(AuthorizeMiddleware())
 
 
+SHOW_RANDOM_JOKE_PROB = 0.5
+
+
 @jokes_router.message(Command("new_joke"))
 async def new_joke_handler(message: Message) -> None:
     assert message.from_user
 
     async with async_session() as session:
-        jokes_scores = (
-            select(Like.joke_id, func.avg(Like.score).label("avg_score"))
-            .group_by(Like.joke_id)
-            .subquery()
+        filter = filter_seen_jokes(
+            filter=accepted_jokes(), by_user_id=message.from_user.id
         )
-        seen_jokes = (
-            select(SeenJoke.joke_id)
-            .where(SeenJoke.user_id == message.from_user.id)
-            .subquery()
-        )
-        joke = await session.scalar(
-            select(Joke)
-            .options(selectinload(Joke.creator))
-            .filter(Joke.accepted.is_(True))
-            .join(seen_jokes, Joke.id == seen_jokes.c.joke_id, isouter=True)
-            .where(seen_jokes.c.joke_id.is_(None))
-            .join(
-                jokes_scores,
-                Joke.id == jokes_scores.c.joke_id,
-                isouter=True,
-            )
-            .order_by(jokes_scores.c.avg_score)
-            .limit(1)
-        )
+
+        if random.random() < SHOW_RANDOM_JOKE_PROB:
+            joke = await random_joke(session, filter)
+        else:
+            joke = await most_rated_joke(session, filter)
 
         if not joke:
             await message.answer("جوکی ندارم که برات بگم :(")
