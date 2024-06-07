@@ -4,6 +4,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from sqlalchemy import update
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError
 
 from obeyd.models import User, async_session
 from obeyd.users.services import find_user_by_id
@@ -38,10 +39,17 @@ async def command_start_nickname_handler(message: Message, state: FSMContext) ->
     await state.clear()
 
     async with async_session() as session:
-        await session.execute(
-            insert(User).values(user_id=message.from_user.id, nickname=data["nickname"])
-        )
-        await session.commit()
+        try:
+            await session.execute(
+                insert(User).values(
+                    user_id=message.from_user.id, nickname=data["nickname"]
+                )
+            )
+            await session.commit()
+        except IntegrityError:
+            await message.answer(
+                "این اسم رو کس دیگه ای استفاده کرده. دوباره دستور /start رو بزن."
+            )
 
     await message.answer(
         f"خوشوقتم {data['nickname']} :) حالا /newjoke رو برام بنویس تا برات جوک بگم."
@@ -67,12 +75,17 @@ async def command_set_nickname_end_handler(message: Message, state: FSMContext) 
     await state.clear()
 
     async with async_session() as session:
-        await session.execute(
-            update(User)
-            .where(User.user_id == message.from_user.id)
-            .values(nickname=data["nickname"])
-        )
-        await session.commit()
+        try:
+            await session.execute(
+                update(User)
+                .where(User.user_id == message.from_user.id)
+                .values(nickname=data["nickname"])
+            )
+            await session.commit()
+        except IntegrityError:
+            await message.answer(
+                "این اسم رو کس دیگه ای استفاده کرده. دوباره دستور /setnickname رو بزن."
+            )
 
     await message.answer(
         f"خوشوقتم {data['nickname']} :) حالا /newjoke رو برام بنویس تا برات جوک بگم."
