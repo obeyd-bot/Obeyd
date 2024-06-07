@@ -66,7 +66,7 @@ async def new_joke_handler(message: Message) -> None:
             f"""
 {joke.text}
 
-{html.bold(joke.creator.nickname)}
+{html.bold(joke.creator_nickname)}
 """,
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=[
