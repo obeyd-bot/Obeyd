@@ -1,7 +1,7 @@
 from aiogram import html
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from obeyd.bot import new_bot
+from obeyd.bot import bot
 from obeyd.jokes.callbacks import ReviewJokeCallback
 
 REVIEW_SUBMITTED_JOKES_CHAT_ID = "-4226479784"
@@ -10,8 +10,6 @@ REVIEW_SUBMITTED_JOKES_CHAT_ID = "-4226479784"
 async def notify_admin_submit_joke_async(
     joke_id, joke_text, joke_creator_nickname, from_user
 ):
-    bot = new_bot()
-
     await bot.send_message(
         chat_id=REVIEW_SUBMITTED_JOKES_CHAT_ID,
         text=f"""
@@ -40,5 +38,3 @@ async def notify_admin_submit_joke_async(
             ]
         ),
     )
-
-    await bot.close()
