@@ -5,9 +5,8 @@ import sentry_sdk
 from aiogram import Dispatcher
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.storage.redis import RedisStorage
+from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import Message, ReplyKeyboardRemove
-from redis.asyncio import Redis
 
 from obeyd.bot import bot
 from obeyd.jokes.routes import jokes_router
@@ -38,7 +37,7 @@ async def main() -> None:
         profiles_sample_rate=1.0,
     )
 
-    storage = RedisStorage(redis=Redis(db="1"))
+    storage = MemoryStorage()
     dp = Dispatcher(storage=storage)
 
     dp.include_router(jokes_router)
