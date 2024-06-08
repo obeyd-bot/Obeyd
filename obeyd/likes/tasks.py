@@ -1,7 +1,7 @@
 from aiogram import html
-from aiogram.methods import SendMessage
 from sqlalchemy import select
 
+from obeyd.bot import bot
 from obeyd.models import Joke, async_session
 
 LIKE_MESSAGE_TEMPLATE_BY_SCORE = {
@@ -20,7 +20,7 @@ async def notify_creator_like_joke(joke_id, score, from_user_nickname):
     if joke is None or joke.creator_id is None:
         return
 
-    await SendMessage(
+    await bot.send_message(
         chat_id=joke.creator_id,
         text=f"""
 {LIKE_MESSAGE_TEMPLATE_BY_SCORE[score].format(name=html.bold(from_user_nickname))}

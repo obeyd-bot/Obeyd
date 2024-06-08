@@ -9,7 +9,7 @@ from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.types import Message, ReplyKeyboardRemove
 from redis.asyncio import Redis
 
-from obeyd.bot import new_bot
+from obeyd.bot import bot
 from obeyd.jokes.routes import jokes_router
 from obeyd.likes.routes import likes_router
 from obeyd.users.routes import users_router
@@ -46,7 +46,6 @@ async def main() -> None:
     dp.include_router(users_router)
     dp.message(Command("cancel"))(cancel_handler)
 
-    bot = new_bot()
     await dp.start_polling(bot)
 
 
