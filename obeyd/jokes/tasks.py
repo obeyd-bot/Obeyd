@@ -1,5 +1,4 @@
 from aiogram import html
-from aiogram.methods import SendMessage
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from obeyd.bot import bot
