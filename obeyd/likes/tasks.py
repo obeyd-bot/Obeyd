@@ -13,7 +13,7 @@ LIKE_MESSAGE_TEMPLATE_BY_SCORE = {
 }
 
 
-async def notify_creator_like_joke_async(joke_id, score, from_user_nickname):
+async def notify_creator_like_joke(joke_id, score, from_user_nickname):
     bot = new_bot()
 
     async with async_session() as session:

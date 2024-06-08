@@ -5,9 +5,9 @@ from sqlalchemy.exc import IntegrityError
 
 from obeyd.likes.callbacks import LikeCallback
 from obeyd.likes.enums import SCORES
+from obeyd.likes.tasks import notify_creator_like_joke
 from obeyd.middlewares import AuthenticateMiddleware, AuthorizeMiddleware
 from obeyd.models import Like, async_session
-from obeyd.tasks import notify_creator_like_joke
 from obeyd.users.services import find_user_by_id
 
 likes_router = Router()
@@ -37,10 +37,10 @@ async def like_callback_handler(
             await query.answer(text="قبلا به این جوک رای دادی!")
             return
 
-    notify_creator_like_joke.delay(
+    await query.answer(text=SCORES[str(callback_data.score)]["notif"])
+
+    await notify_creator_like_joke(
         callback_data.joke_id,
         callback_data.score,
         "یک نفر" if user is None else user.nickname,
     )
-
-    await query.answer(text=SCORES[str(callback_data.score)]["notif"])

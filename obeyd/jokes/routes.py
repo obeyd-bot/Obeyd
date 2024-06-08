@@ -1,3 +1,4 @@
+import asyncio
 import random
 
 from aiogram import Router, html
@@ -21,11 +22,11 @@ from obeyd.jokes.services import (
     random_joke,
 )
 from obeyd.jokes.states import NewJokeForm
+from obeyd.jokes.tasks import notify_admin_submit_joke
 from obeyd.likes.callbacks import LikeCallback
 from obeyd.likes.enums import SCORES
 from obeyd.middlewares import AuthenticateMiddleware, AuthorizeMiddleware
 from obeyd.models import Joke, SeenJoke, async_session
-from obeyd.tasks import notify_admin_submit_joke
 from obeyd.users.services import find_user_by_id
 
 jokes_router = Router()
@@ -111,11 +112,11 @@ async def submit_joke_end_handler(message: Message, state: FSMContext) -> None:
         await session.commit()
         await session.refresh(joke)
 
-    notify_admin_submit_joke.delay(
+    await message.answer("😂😂😂")
+
+    await notify_admin_submit_joke(
         joke.id, joke.text, joke.creator_nickname, message.from_user.full_name
     )
-
-    await message.answer("😂😂😂")
 
 
 @jokes_router.callback_query(ReviewJokeCallback.filter())

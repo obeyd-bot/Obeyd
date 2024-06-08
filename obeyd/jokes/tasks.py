@@ -7,7 +7,7 @@ from obeyd.jokes.callbacks import ReviewJokeCallback
 REVIEW_SUBMITTED_JOKES_CHAT_ID = "-4226479784"
 
 
-async def notify_admin_submit_joke_async(
+async def notify_admin_submit_joke(
     joke_id, joke_text, joke_creator_nickname, from_user
 ):
     bot = new_bot()
