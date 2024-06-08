@@ -1,7 +1,7 @@
 from aiogram import html
 from sqlalchemy import select
 
-from obeyd.bot import bot
+from obeyd.bot import new_bot
 from obeyd.models import Joke, async_session
 
 LIKE_MESSAGE_TEMPLATE_BY_SCORE = {
@@ -14,6 +14,8 @@ LIKE_MESSAGE_TEMPLATE_BY_SCORE = {
 
 
 async def notify_creator_like_joke_async(joke_id, score, from_user_nickname):
+    bot = new_bot()
+
     async with async_session() as session:
         joke = await session.scalar(select(Joke).where(Joke.id == joke_id))
 
@@ -28,3 +30,5 @@ async def notify_creator_like_joke_async(joke_id, score, from_user_nickname):
 جوک شما: {joke.text}
 """,
     )
+
+    await bot.close()
