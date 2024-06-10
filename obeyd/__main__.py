@@ -27,7 +27,7 @@ async def cancel_handler(message: Message, state: FSMContext) -> None:
 
 async def main() -> None:
     sentry_sdk.init(
-        dsn="https://3f61d721091e147adc6ee6028f06aa25@o673833.ingest.us.sentry.io/4507386459127808",
+        dsn="https://843cb5c0e82dfa5f061f643a1422a9cf@sentry.hamravesh.com/6750",
         # Set traces_sample_rate to 1.0 to capture 100%
         # of transactions for performance monitoring.
         traces_sample_rate=1.0,
