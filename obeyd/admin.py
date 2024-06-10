@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     db.init_app(app)
 
-    admin = Admin(app, name="obeyd", template_mode="bootstrap3")
+    admin = Admin(app, name="obeyd", template_mode="bootstrap3", url="/")
     admin.add_view(ModelView(Joke, db.session))
     admin.add_view(ModelView(User, db.session))
     admin.add_view(ModelView(Like, db.session))
