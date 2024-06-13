@@ -1,3 +1,4 @@
+from calendar import c
 import logging
 import os
 import random
@@ -462,8 +463,14 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
             .group_by(Activity.user_id)
             .having(func.max(Activity.created_at) <= current_time - timedelta(days=1))
         )
-    for user_id, last_activity in result:
-        print(user_id, last_activity)
+
+    count = 0
+    for _ in result:
+        count += 1
+
+    await context.bot.send_message(
+        chat_id=REVIEW_JOKES_CHAT_ID, text=f"total inactive users = {count}"
+    )
 
 
 if __name__ == "__main__":
