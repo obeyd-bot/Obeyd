@@ -565,6 +565,6 @@ if __name__ == "__main__":
     app.add_handler(InlineQueryHandler(inline_query_handler))
 
     # jobs
-    job_queue.run_repeating(callback=notify_inactive_users_callback, interval=60)
+    job_queue.run_repeating(callback=notify_inactive_users_callback, interval=timedelta(hours=1).total_seconds())
 
     app.run_polling()
