@@ -365,6 +365,53 @@ async def scorejoke_callback_query_handler(
         await update.callback_query.answer("شما قبلا یک بار رای داده اید")
     else:
         await update.callback_query.answer(SCORES[score]["notif"])
+        assert context.job_queue
+        context.job_queue.run_once(
+            callback=scorejoke_callback_notify_creator,
+            when=0,
+            data={
+                "scored_by_user_id": update.effective_user.id,
+                "joke_id": int(joke_id),
+                "score": int(score),
+            },
+        )
+
+
+async def scorejoke_callback_notify_creator(context: ContextTypes.DEFAULT_TYPE):
+    assert context.job
+    assert isinstance(context.job.data, dict)
+
+    scored_by_user_id = context.job.data["scored_by_user_id"]
+    joke_id = context.job.data["joke_id"]
+    score = context.job.data["score"]
+
+    async with async_session() as session:
+        scored_by_user = await session.scalar(
+            select(User).where(User.user_id == scored_by_user_id)
+        )
+        assert scored_by_user is not None
+        joke = await session.scalar(select(Joke).where(Joke.id == joke_id))
+        assert joke is not None
+
+    await context.bot.send_message(
+        chat_id=REVIEW_JOKES_CHAT_ID,
+        text=f"{scored_by_user.nickname} به جوک شما امتیاز {score} رو داد.",
+        parse_mode=ParseMode.MARKDOWN_V2,
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="رد",
+                        callback_data=f"reviewjoke:{joke_id}:reject",
+                    ),
+                    InlineKeyboardButton(
+                        text="تایید",
+                        callback_data=f"reviewjoke:{joke_id}:accept",
+                    ),
+                ]
+            ]
+        ),
+    )
 
 
 async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
