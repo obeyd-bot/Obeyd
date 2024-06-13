@@ -312,6 +312,16 @@ if __name__ == "__main__":
     )
     app.add_handler(CommandHandler("getname", getname_handler))
     app.add_handler(CommandHandler("getjoke", getjoke_handler))
-    app.add_handler(CommandHandler("newjoke", newjoke_handler))
+    app.add_handler(
+        ConversationHandler(
+            entry_points=[CommandHandler("newjoke", newjoke_handler)],
+            states={
+                NEWJOKE_STATES_TEXT: [
+                    MessageHandler(filters.TEXT, newjoke_handler_text)
+                ]
+            },
+            fallbacks=[CommandHandler("cancel", cancel_handler)],
+        )
+    )
 
     app.run_polling()
