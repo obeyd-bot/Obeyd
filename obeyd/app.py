@@ -493,7 +493,9 @@ if __name__ == "__main__":
         ConversationHandler(
             entry_points=[CommandHandler("start", start_handler)],
             states={
-                START_STATES_NAME: [MessageHandler(filters.TEXT, start_handler_name)]
+                START_STATES_NAME: [
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, start_handler_name)
+                ]
             },
             fallbacks=[CommandHandler("cancel", cancel_handler)],
         )
@@ -503,7 +505,9 @@ if __name__ == "__main__":
             entry_points=[CommandHandler("setname", setname_handler)],
             states={
                 SETNAME_STATES_NAME: [
-                    MessageHandler(filters.TEXT, setname_handler_name)
+                    MessageHandler(
+                        filters.TEXT & ~filters.COMMAND, setname_handler_name
+                    )
                 ]
             },
             fallbacks=[CommandHandler("cancel", cancel_handler)],
@@ -516,7 +520,9 @@ if __name__ == "__main__":
             entry_points=[CommandHandler("newjoke", newjoke_handler)],
             states={
                 NEWJOKE_STATES_TEXT: [
-                    MessageHandler(filters.TEXT, newjoke_handler_text)
+                    MessageHandler(
+                        filters.TEXT & ~filters.COMMAND, newjoke_handler_text
+                    )
                 ]
             },
             fallbacks=[CommandHandler("cancel", cancel_handler)],
