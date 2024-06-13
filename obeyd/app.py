@@ -93,7 +93,7 @@ def not_authenticated(f):
             )
             return
 
-        await f(update, context)
+        return await f(update, context)
 
     return g
 
@@ -113,7 +113,7 @@ def authenticated(f):
             await update.message.reply_text("من شما رو میشناسم؟")
             return
 
-        await f(update, context, user=user)
+        return await f(update, context, user=user)
 
     return g
 
