@@ -470,7 +470,7 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     await update.inline_query.answer(
         results=[
             InlineQueryResultArticle(
-                id="",
+                id="joke",
                 title="جوک بگو!",
                 input_message_content=InputTextMessageContent(
                     message_text=format_joke(joke), parse_mode=ParseMode.MARKDOWN_V2
