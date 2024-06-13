@@ -211,20 +211,20 @@ async def newjoke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 *{joke.creator_nickname}*
 """,
-            # reply_markup=InlineKeyboardMarkup(
-            #     inline_keyboard=[
-            #         [
-            #             InlineKeyboardButton(
-            #                 text=score_data["emoji"],
-            #                 callback_data={
-            #                     "joke_id": joke.id,
-            #                     "score": int(score),
-            #                 },
-            #             )
-            #             for score, score_data in SCORES.items()
-            #         ]
-            #     ]
-            # ),
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(
+                            text=score_data["emoji"],
+                            callback_data={
+                                "joke_id": joke.id,
+                                "score": int(score),
+                            },
+                        )
+                        for score, score_data in SCORES.items()
+                    ]
+                ]
+            ),
         )
 
         await session.execute(
