@@ -213,11 +213,8 @@ async def getjoke_handler(
             return
 
         await update.message.reply_text(
-            f"""
-{joke.text}
-
-*{joke.creator_nickname}*
-""",
+            f"{joke.text}\n\n*{joke.creator_nickname}*",
+            parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=[
                     [
