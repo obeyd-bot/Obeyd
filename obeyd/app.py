@@ -1,7 +1,8 @@
-from functools import wraps
 import logging
 import os
 import random
+from datetime import datetime, timedelta
+from functools import wraps
 from typing import Optional, Tuple
 
 import sentry_sdk
@@ -451,6 +452,20 @@ async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
+async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
+    current_time = datetime.now()
+    async with async_session() as session:
+        result = await session.scalars(
+            select(
+                Activity.user_id, func.max(Activity.created_at).label("last_activity")
+            )
+            .group_by(Activity.user_id)
+            .having(func.max(Activity.created_at) <= current_time - timedelta(days=1))
+        )
+    for user_id, last_activity in result:
+        print(user_id, last_activity)
+
+
 if __name__ == "__main__":
     sentry_sdk.init(
         dsn="https://843cb5c0e82dfa5f061f643a1422a9cf@sentry.hamravesh.com/6750",
@@ -464,6 +479,8 @@ if __name__ == "__main__":
     )
 
     app = ApplicationBuilder().token(os.environ["API_TOKEN"]).build()
+    job_queue = app.job_queue
+    assert job_queue
 
     app.add_handler(
         ConversationHandler(
@@ -501,10 +518,11 @@ if __name__ == "__main__":
     app.add_handler(
         CallbackQueryHandler(scorejoke_callback_query_handler, pattern="^scorejoke")
     )
-
-    # admin
     app.add_handler(
         CallbackQueryHandler(reviewjoke_callback_query_handler, pattern="^reviewjoke")
     )
+
+    # jobs
+    job_queue.run_repeating(callback=notify_inactive_users_callback, interval=60)
 
     app.run_polling()
