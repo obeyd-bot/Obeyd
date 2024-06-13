@@ -25,11 +25,15 @@ from telegram.ext import (
 from obeyd.models import Joke, Like, SeenJoke, User, async_session
 
 SCORES = {
-    "1": {"emoji": "💩", "notif": "💩💩💩"},
-    "2": {"emoji": "😐", "notif": "😐😐😐"},
-    "3": {"emoji": "🙂", "notif": "🙂🙂🙂"},
-    "4": {"emoji": "😁", "notif": "😁😁😁"},
-    "5": {"emoji": "😂", "notif": "😂😂😂"},
+    "1": {"emoji": "💩", "notif": "💩💩💩", "score_notif": "{s} با جوکت اصلا حال نکرد"},
+    "2": {"emoji": "😐", "notif": "😐😐😐", "score_notif": "{s} با جوکت حال نکرد"},
+    "3": {
+        "emoji": "🙂",
+        "notif": "🙂🙂🙂",
+        "score_notif": "{s} فکر میکنه جوکت بد هم نبوده",
+    },
+    "4": {"emoji": "😁", "notif": "😁😁😁", "score_notif": "{s} با جوکت حال کرد"},
+    "5": {"emoji": "😂", "notif": "😂😂😂", "score_notif": "{s} با جوکت خیلی حال کرد"},
 }
 
 SHOW_RANDOM_JOKE_PROB = 0.25
@@ -392,7 +396,7 @@ async def scorejoke_callback_notify_creator(context: ContextTypes.DEFAULT_TYPE):
 
     await context.bot.send_message(
         chat_id=REVIEW_JOKES_CHAT_ID,
-        text=f"{scored_by_user.nickname} به جوک شما امتیاز {score} رو داد!",
+        text=SCORES[str(score)]["score_notif"],
         parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
