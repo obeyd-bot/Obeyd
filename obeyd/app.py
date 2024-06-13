@@ -67,7 +67,7 @@ SETNAME_STATES_NAME = 1
 NEWJOKE_STATES_TEXT = 1
 
 REVIEW_JOKES_CHAT_ID = "-4226479784"
-GARBAGE_CHAT_ID = "-1002226429853"
+IRAJ_REVIEW_JOKES_CHAT_ID = "-1002165193314"
 
 
 def accepted_jokes() -> Select[Tuple[Joke]]:
@@ -311,7 +311,7 @@ async def newjoke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE):
     joke = context.job.data["joke"]
 
     await context.bot.send_message(
-        chat_id=REVIEW_JOKES_CHAT_ID,
+        chat_id=IRAJ_REVIEW_JOKES_CHAT_ID,
         text=f"جوک جدیدی ارسال شده است:\n\n{format_joke(joke)}",
         parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=InlineKeyboardMarkup(
@@ -464,7 +464,7 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     assert update.inline_query
 
     async with async_session() as session:
-        joke = await random_joke(session, None)
+        joke = await random_joke(session, accepted_jokes())
         assert joke is not None
 
     await update.inline_query.answer(
@@ -491,13 +491,13 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
 
     for user_id in result:
         await context.bot.send_message(
-            chat_id=GARBAGE_CHAT_ID,
+            chat_id=IRAJ_REVIEW_JOKES_CHAT_ID,
             text=f"*{user_id}*: یه جوک بگم؟",
             parse_mode=ParseMode.MARKDOWN_V2,
         )
     else:
         await context.bot.send_message(
-            chat_id=GARBAGE_CHAT_ID, text="هیچ کاربر غیرفعالی وجود نداشت"
+            chat_id=IRAJ_REVIEW_JOKES_CHAT_ID, text="هیچ کاربر غیرفعالی وجود نداشت"
         )
 
 
