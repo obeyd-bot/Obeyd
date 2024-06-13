@@ -68,8 +68,8 @@ START_STATES_NAME = 1
 SETNAME_STATES_NAME = 1
 NEWJOKE_STATES_TEXT = 1
 
-REVIEW_JOKES_CHAT_ID = "-4226479784"
-IRAJ_REVIEW_JOKES_CHAT_ID = "-1002165193314"
+REVIEW_JOKES_CHAT_ID = os.environ["REVIEW_JOKES_CHAT_ID"]
+ALERTS_CHAT_ID = os.environ["ALERTS_CHAT_ID"]
 
 
 def accepted_jokes() -> Select[Tuple[Joke]]:
@@ -77,7 +77,7 @@ def accepted_jokes() -> Select[Tuple[Joke]]:
 
 
 async def alert_admin(context: ContextTypes.DEFAULT_TYPE, msg: str):
-    await context.bot.send_message(chat_id=IRAJ_REVIEW_JOKES_CHAT_ID, text=msg)
+    await context.bot.send_message(chat_id=ALERTS_CHAT_ID, text=msg)
 
 
 def filter_seen_jokes(
@@ -317,7 +317,7 @@ async def newjoke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE):
     joke = context.job.data["joke"]
 
     await context.bot.send_message(
-        chat_id=IRAJ_REVIEW_JOKES_CHAT_ID,
+        chat_id=REVIEW_JOKES_CHAT_ID,
         text=f"جوک جدیدی ارسال شده است:\n\n{format_joke(joke)}",
         parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=InlineKeyboardMarkup(
@@ -493,9 +493,7 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
         result = await session.scalars(
             select(Activity.user_id)
             .group_by(Activity.user_id)
-            .having(
-                func.max(Activity.created_at) <= current_time - timedelta(minutes=5)
-            )
+            .having(func.max(Activity.created_at) <= current_time - timedelta(days=1))
         )
 
     found = False
@@ -511,7 +509,7 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
         )
     if not found:
         await context.bot.send_message(
-            chat_id=IRAJ_REVIEW_JOKES_CHAT_ID, text="هیچ کاربر غیرفعالی وجود نداشت"
+            chat_id=ALERTS_CHAT_ID, text="هیچ کاربر غیرفعالی وجود نداشت"
         )
 
 
@@ -581,7 +579,7 @@ if __name__ == "__main__":
     # jobs
     job_queue.run_repeating(
         callback=notify_inactive_users_callback,
-        interval=timedelta(minutes=1).total_seconds(),
+        interval=timedelta(hours=1).total_seconds(),
     )
 
     app.run_polling()
