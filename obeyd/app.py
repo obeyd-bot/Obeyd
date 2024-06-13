@@ -464,13 +464,13 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
             .having(func.max(Activity.created_at) <= current_time - timedelta(days=1))
         )
 
-    count = 0
-    for _ in result:
-        count += 1
+    # count = 0
+    # for _ in result:
+    #     count += 1
 
-    await context.bot.send_message(
-        chat_id=REVIEW_JOKES_CHAT_ID, text=f"total inactive users = {count}"
-    )
+    # await context.bot.send_message(
+    #     chat_id=REVIEW_JOKES_CHAT_ID, text=f"total inactive users = {count}"
+    # )
 
 
 if __name__ == "__main__":
