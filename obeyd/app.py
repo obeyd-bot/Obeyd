@@ -104,7 +104,7 @@ async def most_rated_joke(
 def log_activity(kind):
     def g(f):
         @wraps(f)
-        async def h(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        async def h(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
             assert update.effective_user
 
             async with async_session() as session:
@@ -114,7 +114,7 @@ def log_activity(kind):
                 session.add(activity)
                 await session.commit()
 
-            return await f(update, context)
+            return await f(update, context, **kwargs)
 
         return h
 
