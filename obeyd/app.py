@@ -61,6 +61,7 @@ SETNAME_STATES_NAME = 1
 NEWJOKE_STATES_TEXT = 1
 
 REVIEW_JOKES_CHAT_ID = "-4226479784"
+GARBAGE_CHAT_ID = "-1002226429853"
 
 
 def accepted_jokes() -> Select[Tuple[Joke]]:
@@ -457,20 +458,21 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
     current_time = datetime.now()
     async with async_session() as session:
         result = await session.scalars(
-            select(
-                Activity.user_id, func.max(Activity.created_at).label("last_activity")
-            )
+            select(Activity.user_id)
             .group_by(Activity.user_id)
             .having(func.max(Activity.created_at) <= current_time - timedelta(days=1))
         )
 
-    # count = 0
-    # for _ in result:
-    #     count += 1
-
-    # await context.bot.send_message(
-    #     chat_id=REVIEW_JOKES_CHAT_ID, text=f"total inactive users = {count}"
-    # )
+    for user_id in result:
+        await context.bot.send_message(
+            chat_id=GARBAGE_CHAT_ID,
+            text=f"*{user_id}*: یه جوک بگم؟",
+            parse_mode=ParseMode.MARKDOWN_V2,
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=GARBAGE_CHAT_ID, text="هیچ کاربر غیرفعالی وجود نداشت"
+        )
 
 
 if __name__ == "__main__":
