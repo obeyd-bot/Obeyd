@@ -341,7 +341,7 @@ async def reviewjoke_callback_query_handler(
 
 @authenticated
 async def scorejoke_callback_query_handler(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
 ):
     assert update.effective_user
     assert update.callback_query
