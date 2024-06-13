@@ -10,8 +10,10 @@ from sqlalchemy import update as _update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.constants import ParseMode
 from telegram.ext import (
     ApplicationBuilder,
+    CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
     ConversationHandler,
@@ -250,15 +252,32 @@ async def newjoke_handler(
     return NEWJOKE_STATES_TEXT
 
 
-async def new_joke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE):
+async def newjoke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE):
     assert context.job
+    assert isinstance(context.job.data, dict)
 
+    joke_id = context.job.data["joke_id"]
     joke_text = context.job.data["joke_text"]
     joke_creator_nickname = context.job.data["joke_creator_nickname"]
 
     await context.bot.send_message(
         chat_id=REVIEW_JOKES_CHAT_ID,
         text=f"جوک جدیدی ارسال شده است:\n{joke_text}\n*{joke_creator_nickname}*",
+        parse_mode=ParseMode.MARKDOWN_V2,
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="رد",
+                        callback_data=f"reviewjoke:{joke_id}:reject",
+                    ),
+                    InlineKeyboardButton(
+                        text="تایید",
+                        callback_data=f"reviewjoke:{joke_id}:accept",
+                    ),
+                ]
+            ]
+        ),
     )
 
 
@@ -271,27 +290,55 @@ async def newjoke_handler_text(
     assert context.job_queue
 
     async with async_session() as session:
-        await session.execute(
-            insert(Joke).values(
-                text=update.message.text,
-                creator_id=user.user_id,
-                creator_nickname=user.nickname,
-            )
+        joke = Joke(
+            text=update.message.text,
+            creator_id=user.user_id,
+            creator_nickname=user.nickname,
         )
+        session.add(joke)
         await session.commit()
+        await session.refresh(joke)
 
     context.job_queue.run_once(
-        callback=new_joke_callback_notify_admin,
+        callback=newjoke_callback_notify_admin,
         when=0,
         data={
-            "joke_text": update.message.text,
-            "joke_creator_nickname": user.nickname,
+            "joke_id": joke.id,
+            "joke_text": joke.text,
+            "joke_creator_nickname": joke.creator_nickname,
         },
     )
 
     await update.message.reply_text("دریافت شد!")
 
     return ConversationHandler.END
+
+
+async def reviewjoke_callback_query_handler(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
+    assert update.callback_query
+    assert isinstance(update.callback_query.data, str)
+
+    _, joke_id, action = tuple(update.callback_query.data.split(":"))
+    accepted = None
+    if action == "accept":
+        accepted = True
+    elif action == "reject":
+        accepted = False
+    else:
+        raise Exception("expected accept or reject")
+
+    async with async_session() as session:
+        await session.execute(
+            _update(Joke).where(Joke.id == int(joke_id)).values(accepted=accepted)
+        )
+        await session.commit()
+
+    if accepted:
+        await update.callback_query.answer("تایید شد")
+    else:
+        await update.callback_query.answer("رد شد")
 
 
 async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -350,6 +397,11 @@ if __name__ == "__main__":
             },
             fallbacks=[CommandHandler("cancel", cancel_handler)],
         )
+    )
+
+    # admin
+    app.add_handler(
+        CallbackQueryHandler(reviewjoke_callback_query_handler, pattern="^reviewjoke")
     )
 
     app.run_polling()
