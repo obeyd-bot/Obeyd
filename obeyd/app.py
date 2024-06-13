@@ -74,6 +74,28 @@ async def most_rated_joke(
     )
 
 
+async def not_authenticated(f):
+    @wraps(f)
+    async def g(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        assert update.message
+        assert update.effective_user
+
+        async with async_session() as session:
+            user = await session.scalar(
+                select(User).where(User.user_id == update.effective_user.id)
+            )
+
+        if user is not None:
+            await update.message.reply_text(
+                f"من شما رو میشناسم. تو {user.nickname} هستی."
+            )
+            return
+
+        await f(update, context)
+
+    return g
+
+
 async def authenticated(f):
     @wraps(f)
     async def g(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -94,6 +116,7 @@ async def authenticated(f):
     return g
 
 
+@not_authenticated
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
 
@@ -101,6 +124,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return START_STATES_NAME
 
 
+@not_authenticated
 async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
     assert update.effective_user
