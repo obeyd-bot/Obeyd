@@ -1,4 +1,5 @@
 from functools import wraps
+import logging
 import os
 import random
 from typing import Optional, Tuple
@@ -249,6 +250,11 @@ if __name__ == "__main__":
         dsn="https://843cb5c0e82dfa5f061f643a1422a9cf@sentry.hamravesh.com/6750",
         traces_sample_rate=1.0,
         profiles_sample_rate=1.0,
+    )
+
+    logging.basicConfig(
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        level=logging.INFO,
     )
 
     app = ApplicationBuilder().token(os.environ["API_TOKEN"]).build()
