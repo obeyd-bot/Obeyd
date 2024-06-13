@@ -31,8 +31,9 @@ SCORES = {
 
 SHOW_RANDOM_JOKE_PROB = 0.25
 
-START_STATES_NAME = 0
-SETNAME_STATES_NAME = 0
+START_STATES_NAME = 1
+SETNAME_STATES_NAME = 1
+NEWJOKE_STATES_TEXT = 1
 
 
 def accepted_jokes() -> Select[Tuple[Joke]]:
@@ -112,7 +113,7 @@ def authenticated(f):
             await update.message.reply_text("من شما رو میشناسم؟")
             return
 
-        await f(update, context)
+        await f(update, context, user=user)
 
     return g
 
@@ -122,6 +123,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
 
     await update.message.reply_text("سلام. اسمت رو بهم بگو!")
+
     return START_STATES_NAME
 
 
@@ -144,15 +146,20 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 @authenticated
-async def setname_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def setname_handler(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
+):
     assert update.message
 
     await update.message.reply_text("اسمت رو بهم بگو.")
+
     return SETNAME_STATES_NAME
 
 
 @authenticated
-async def setname_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def setname_handler_name(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
+):
     assert update.message
     assert update.effective_user
 
@@ -170,24 +177,17 @@ async def setname_handler_name(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 @authenticated
-async def getname_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def getname_handler(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
+):
     assert update.message
     assert update.effective_user
-
-    async with async_session() as session:
-        user = await session.scalar(
-            select(User).where(User.user_id == update.effective_user.id)
-        )
-
-    if user is None:
-        await update.message.reply_text("هنوز نمیشناسمت!")
-    assert user
 
     await update.message.reply_text(f"تو {user.nickname} هستی!")
 
 
 @authenticated
-async def newjoke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def getjoke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User):
     assert update.message
     assert update.effective_user
 
@@ -235,11 +235,42 @@ async def newjoke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await session.commit()
 
 
+@authenticated
+async def newjoke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User):
+    assert update.message
+
+    await update.message.reply_text("جوکت رو توی یک پیام برام بنویس :)")
+
+    return NEWJOKE_STATES_TEXT
+
+
+@authenticated
+async def newjoke_handler_text(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
+):
+    assert update.message
+    assert update.effective_user
+
+    async with async_session() as session:
+        await session.execute(
+            insert(Joke).values(
+                text=update.message.text,
+                creator_id=user.user_id,
+                creator_nickname=user.user_id,
+            )
+        )
+        await session.commit()
+
+    await update.message.reply_text("دریافت شد!")
+
+    return ConversationHandler.END
+
+
 async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
-    assert context.user_data
 
-    context.user_data.clear()
+    if context.user_data is not None:
+        context.user_data.clear()
     await update.message.reply_text("لغو شد.")
 
     return ConversationHandler.END
@@ -280,6 +311,7 @@ if __name__ == "__main__":
         )
     )
     app.add_handler(CommandHandler("getname", getname_handler))
+    app.add_handler(CommandHandler("getjoke", getjoke_handler))
     app.add_handler(CommandHandler("newjoke", newjoke_handler))
 
     app.run_polling()
