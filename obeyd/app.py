@@ -245,7 +245,7 @@ async def newjoke_handler(
 ):
     assert update.message
 
-    await update.message.reply_text("جوکت رو توی یک پیام برام بنویس :)")
+    await update.message.reply_text("جوکت رو توی یک پیام برام بنویس")
 
     return NEWJOKE_STATES_TEXT
 
@@ -260,7 +260,7 @@ async def newjoke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE):
 
     await context.bot.send_message(
         chat_id=REVIEW_JOKES_CHAT_ID,
-        text=f"جوک جدیدی ارسال شده است:\n{joke_text}\n*{joke_creator_nickname}*",
+        text=f"جوک جدیدی ارسال شده است:\n\n{joke_text}\n\n*{joke_creator_nickname}*",
         parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
@@ -362,7 +362,7 @@ async def scorejoke_callback_query_handler(
             pass
 
     if not inserted:
-        await update.callback_query.answer("شما قبلا یک بار رای داده اید!")
+        await update.callback_query.answer("شما قبلا یک بار رای داده اید")
     else:
         await update.callback_query.answer(SCORES[score]["notif"])
 
