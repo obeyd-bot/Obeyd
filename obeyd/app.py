@@ -266,6 +266,7 @@ async def newjoke_handler_text(
 ):
     assert update.message
     assert update.effective_user
+    assert context.job_queue
 
     async with async_session() as session:
         await session.execute(
@@ -277,7 +278,7 @@ async def newjoke_handler_text(
         )
         await session.commit()
 
-    job_queue.run_once(
+    context.job_queue.run_once(
         callback=new_joke_callback_notify_admin,
         when=0,
         job_kwargs={
@@ -314,8 +315,6 @@ if __name__ == "__main__":
     )
 
     app = ApplicationBuilder().token(os.environ["API_TOKEN"]).build()
-    job_queue = app.job_queue
-    assert job_queue
 
     app.add_handler(
         ConversationHandler(
