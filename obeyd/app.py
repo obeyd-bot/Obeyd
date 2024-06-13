@@ -74,7 +74,7 @@ async def most_rated_joke(
     )
 
 
-async def not_authenticated(f):
+def not_authenticated(f):
     @wraps(f)
     async def g(update: Update, context: ContextTypes.DEFAULT_TYPE):
         assert update.message
@@ -96,7 +96,7 @@ async def not_authenticated(f):
     return g
 
 
-async def authenticated(f):
+def authenticated(f):
     @wraps(f)
     async def g(update: Update, context: ContextTypes.DEFAULT_TYPE):
         assert update.message
