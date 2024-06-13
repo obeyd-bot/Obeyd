@@ -250,9 +250,11 @@ async def newjoke_handler(
     return NEWJOKE_STATES_TEXT
 
 
-async def new_joke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE, **kwargs):
-    joke_text = kwargs["joke_text"]
-    joke_creator_nickname = kwargs["joke_creator_nickname"]
+async def new_joke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE):
+    assert context.job
+
+    joke_text = context.job.data["joke_text"]
+    joke_creator_nickname = context.job.data["joke_creator_nickname"]
 
     await context.bot.send_message(
         chat_id=REVIEW_JOKES_CHAT_ID,
@@ -281,7 +283,7 @@ async def newjoke_handler_text(
     context.job_queue.run_once(
         callback=new_joke_callback_notify_admin,
         when=0,
-        job_kwargs={
+        data={
             "joke_text": update.message.text,
             "joke_creator_nickname": user.nickname,
         },
