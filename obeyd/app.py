@@ -252,7 +252,6 @@ if __name__ == "__main__":
     )
 
     app = ApplicationBuilder().token(os.environ["API_TOKEN"]).build()
-    job_queue = app.job_queue
 
     app.add_handler(
         ConversationHandler(
