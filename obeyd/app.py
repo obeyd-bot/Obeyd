@@ -22,7 +22,7 @@ from telegram.ext import (
     filters,
 )
 
-from obeyd.models import Joke, Like, SeenJoke, User, async_session
+from obeyd.models import Activity, Joke, Like, SeenJoke, User, async_session
 
 SCORES = {
     "1": {
@@ -101,6 +101,26 @@ async def most_rated_joke(
     )
 
 
+def log_activity(kind):
+    def g(f):
+        @wraps(f)
+        async def h(update: Update, context: ContextTypes.DEFAULT_TYPE):
+            assert update.effective_user
+
+            async with async_session() as session:
+                activity = Activity(
+                    kind=kind, user_id=update.effective_user.id, data={}
+                )
+                session.add(activity)
+                await session.commit()
+
+            return await f(update, context)
+
+        return h
+
+    return g
+
+
 def not_authenticated(f):
     @wraps(f)
     async def g(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -171,6 +191,7 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 @authenticated
+@log_activity("setname")
 async def setname_handler(
     update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
 ):
@@ -202,6 +223,7 @@ async def setname_handler_name(
 
 
 @authenticated
+@log_activity("getname")
 async def getname_handler(
     update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
 ):
@@ -212,6 +234,7 @@ async def getname_handler(
 
 
 @authenticated
+@log_activity("joke")
 async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User):
     assert update.message
     assert update.effective_user
@@ -255,6 +278,7 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user:
 
 
 @authenticated
+@log_activity("newjoke")
 async def newjoke_handler(
     update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
 ):
@@ -355,6 +379,7 @@ async def reviewjoke_callback_query_handler(
 
 
 @authenticated
+@log_activity("scorejoke")
 async def scorejoke_callback_query_handler(
     update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
 ):
@@ -415,6 +440,7 @@ async def scorejoke_callback_notify_creator(context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+@log_activity("cancel")
 async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
 

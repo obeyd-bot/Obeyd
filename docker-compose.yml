@@ -1,0 +1,10 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: obeyd
+      POSTGRES_PASSWORD: obeyd
+      POSTGRES_DB: obeyd
+    ports:
+      - "5432:5432"

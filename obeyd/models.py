@@ -1,7 +1,9 @@
 import datetime
 import os
+from typing import Any
 
 from sqlalchemy import BigInteger, ForeignKey, UniqueConstraint, func
+from sqlalchemy.dialects.postgresql import JSON, JSONB
 from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import expression
@@ -15,7 +17,7 @@ NICKNAME_MAX_LENGTH = 100
 
 
 class Base(AsyncAttrs, DeclarativeBase):
-    pass
+    type_annotation_map = {dict[str, Any]: JSON}
 
 
 class User(Base):
@@ -83,3 +85,16 @@ class Like(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "joke_id", name="user_id_joke_id_key"),
     )
+
+
+class Activity(Base):
+    __tablename__ = "activities"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    kind: Mapped[str]
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.user_id"))
+    user: Mapped[User] = relationship()
+    data: Mapped[dict[str, Any]]
+
+    created_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
