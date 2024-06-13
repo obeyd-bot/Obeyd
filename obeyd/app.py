@@ -395,7 +395,7 @@ async def scorejoke_callback_notify_creator(context: ContextTypes.DEFAULT_TYPE):
 
     await context.bot.send_message(
         chat_id=REVIEW_JOKES_CHAT_ID,
-        text=f"{scored_by_user.nickname} به جوک شما امتیاز {score} رو داد.",
+        text=f"{scored_by_user.nickname} به جوک شما امتیاز {score} رو داد!",
         parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
