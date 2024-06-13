@@ -212,9 +212,7 @@ async def getname_handler(
 
 
 @authenticated
-async def getjoke_handler(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
-):
+async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User):
     assert update.message
     assert update.effective_user
 
@@ -462,7 +460,7 @@ if __name__ == "__main__":
         )
     )
     app.add_handler(CommandHandler("getname", getname_handler))
-    app.add_handler(CommandHandler("getjoke", getjoke_handler))
+    app.add_handler(CommandHandler("joke", joke_handler))
     app.add_handler(
         ConversationHandler(
             entry_points=[CommandHandler("newjoke", newjoke_handler)],
