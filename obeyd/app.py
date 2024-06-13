@@ -264,7 +264,7 @@ if __name__ == "__main__":
     )
     app.add_handler(
         ConversationHandler(
-            entry_points=[CommandHandler("setname", start_handler)],
+            entry_points=[CommandHandler("setname", setname_handler)],
             states={
                 SETNAME_STATES_NAME: [
                     MessageHandler(filters.TEXT, setname_handler_name)
