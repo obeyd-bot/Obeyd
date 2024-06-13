@@ -16,6 +16,8 @@ from telegram import (
     InlineKeyboardMarkup,
     InlineQueryResultArticle,
     InputTextMessageContent,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
     Update,
 )
 from telegram.constants import ParseMode
@@ -486,14 +488,19 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
         result = await session.scalars(
             select(Activity.user_id)
             .group_by(Activity.user_id)
-            .having(func.max(Activity.created_at) <= current_time - timedelta(days=1))
+            .having(
+                func.max(Activity.created_at) <= current_time - timedelta(minutes=5)
+            )
         )
 
     for user_id in result:
         await context.bot.send_message(
-            chat_id=IRAJ_REVIEW_JOKES_CHAT_ID,
-            text=f"*{user_id}*: یه جوک بگم؟",
+            chat_id=user_id,
+            text=f"یه جوک بگم؟",
             parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[[KeyboardButton(text="/joke")]], one_time_keyboard=True
+            ),
         )
     else:
         await context.bot.send_message(
@@ -565,6 +572,9 @@ if __name__ == "__main__":
     app.add_handler(InlineQueryHandler(inline_query_handler))
 
     # jobs
-    job_queue.run_repeating(callback=notify_inactive_users_callback, interval=timedelta(hours=1).total_seconds())
+    job_queue.run_repeating(
+        callback=notify_inactive_users_callback,
+        interval=timedelta(minutes=1).total_seconds(),
+    )
 
     app.run_polling()
