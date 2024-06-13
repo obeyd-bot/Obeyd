@@ -76,6 +76,10 @@ def accepted_jokes() -> Select[Tuple[Joke]]:
     return select(Joke).filter(Joke.accepted.is_(True))
 
 
+async def alert_admin(context: ContextTypes.DEFAULT_TYPE, msg: str):
+    await context.bot.send_message(chat_id=IRAJ_REVIEW_JOKES_CHAT_ID, text=msg)
+
+
 def filter_seen_jokes(
     filter: Select[Tuple[Joke]], by_user_id: int
 ) -> Select[Tuple[Joke]]:
@@ -494,7 +498,9 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
             )
         )
 
+    found = False
     for user_id in result:
+        found = True
         await context.bot.send_message(
             chat_id=user_id,
             text=f"یه جوک بگم؟",
@@ -503,7 +509,7 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
                 keyboard=[[KeyboardButton(text="/joke")]], one_time_keyboard=True
             ),
         )
-    else:
+    if not found:
         await context.bot.send_message(
             chat_id=IRAJ_REVIEW_JOKES_CHAT_ID, text="هیچ کاربر غیرفعالی وجود نداشت"
         )
