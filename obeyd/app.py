@@ -35,6 +35,8 @@ START_STATES_NAME = 1
 SETNAME_STATES_NAME = 1
 NEWJOKE_STATES_TEXT = 1
 
+REVIEW_JOKES_CHAT_ID = "-4226479784"
+
 
 def accepted_jokes() -> Select[Tuple[Joke]]:
     return select(Joke).filter(Joke.accepted.is_(True))
@@ -187,7 +189,9 @@ async def getname_handler(
 
 
 @authenticated
-async def getjoke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User):
+async def getjoke_handler(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
+):
     assert update.message
     assert update.effective_user
 
@@ -236,12 +240,24 @@ async def getjoke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, us
 
 
 @authenticated
-async def newjoke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User):
+async def newjoke_handler(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
+):
     assert update.message
 
     await update.message.reply_text("جوکت رو توی یک پیام برام بنویس :)")
 
     return NEWJOKE_STATES_TEXT
+
+
+async def new_joke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE, **kwargs):
+    joke_text = kwargs["joke_text"]
+    joke_creator_nickname = kwargs["joke_creator_nickname"]
+
+    await context.bot.send_message(
+        chat_id=REVIEW_JOKES_CHAT_ID,
+        text=f"جوک جدیدی ارسال شده است:\n{joke_text}\n*{joke_creator_nickname}*",
+    )
 
 
 @authenticated
@@ -256,10 +272,19 @@ async def newjoke_handler_text(
             insert(Joke).values(
                 text=update.message.text,
                 creator_id=user.user_id,
-                creator_nickname=user.user_id,
+                creator_nickname=user.nickname,
             )
         )
         await session.commit()
+
+    job_queue.run_once(
+        callback=new_joke_callback_notify_admin,
+        when=0,
+        job_kwargs={
+            "joke_text": update.message.text,
+            "joke_creator_nickname": user.nickname,
+        },
+    )
 
     await update.message.reply_text("دریافت شد!")
 
@@ -289,6 +314,8 @@ if __name__ == "__main__":
     )
 
     app = ApplicationBuilder().token(os.environ["API_TOKEN"]).build()
+    job_queue = app.job_queue
+    assert job_queue
 
     app.add_handler(
         ConversationHandler(
