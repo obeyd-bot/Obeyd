@@ -1,4 +1,3 @@
-from calendar import c
 import logging
 import os
 import random
@@ -12,7 +11,13 @@ from sqlalchemy import update as _update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    InlineQueryResultArticle,
+    InputTextMessageContent,
+    Update,
+)
 from telegram.constants import ParseMode
 from telegram.ext import (
     ApplicationBuilder,
@@ -20,6 +25,7 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
     ConversationHandler,
+    InlineQueryHandler,
     MessageHandler,
     filters,
 )
@@ -80,8 +86,10 @@ def filter_seen_jokes(
 
 
 async def random_joke(
-    session: AsyncSession, filter: Select[Tuple[Joke]]
+    session: AsyncSession, filter: Optional[Select[Tuple[Joke]]]
 ) -> Optional[Joke]:
+    if filter is None:
+        filter = select(Joke)
     return await session.scalar(filter.order_by(func.random()).limit(1))
 
 
@@ -102,6 +110,10 @@ async def most_rated_joke(
         .order_by(jokes_scores.c.avg_score)
         .limit(1)
     )
+
+
+def format_joke(joke: Joke):
+    return f"{joke.text}\n\n*{joke.creator_nickname}*"
 
 
 def log_activity(kind):
@@ -296,24 +308,22 @@ async def newjoke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE):
     assert context.job
     assert isinstance(context.job.data, dict)
 
-    joke_id = context.job.data["joke_id"]
-    joke_text = context.job.data["joke_text"]
-    joke_creator_nickname = context.job.data["joke_creator_nickname"]
+    joke = context.job.data["joke"]
 
     await context.bot.send_message(
         chat_id=REVIEW_JOKES_CHAT_ID,
-        text=f"جوک جدیدی ارسال شده است:\n\n{joke_text}\n\n*{joke_creator_nickname}*",
+        text=f"جوک جدیدی ارسال شده است:\n\n{format_joke(joke)}",
         parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
                         text="رد",
-                        callback_data=f"reviewjoke:{joke_id}:reject",
+                        callback_data=f"reviewjoke:{joke.id}:reject",
                     ),
                     InlineKeyboardButton(
                         text="تایید",
-                        callback_data=f"reviewjoke:{joke_id}:accept",
+                        callback_data=f"reviewjoke:{joke.id}:accept",
                     ),
                 ]
             ]
@@ -342,11 +352,7 @@ async def newjoke_handler_text(
     context.job_queue.run_once(
         callback=newjoke_callback_notify_admin,
         when=0,
-        data={
-            "joke_id": joke.id,
-            "joke_text": joke.text,
-            "joke_creator_nickname": joke.creator_nickname,
-        },
+        data={"joke": joke},
     )
 
     await update.message.reply_text("دریافت شد!")
@@ -454,6 +460,26 @@ async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
+async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    assert update.inline_query
+
+    async with async_session() as session:
+        joke = await random_joke(session, None)
+        assert joke is not None
+
+    await update.inline_query.answer(
+        results=[
+            InlineQueryResultArticle(
+                id="",
+                title="جوک بگو!",
+                input_message_content=InputTextMessageContent(
+                    message_text=format_joke(joke), parse_mode=ParseMode.MARKDOWN_V2
+                ),
+            )
+        ]
+    )
+
+
 async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
     current_time = datetime.now()
     async with async_session() as session:
@@ -536,6 +562,7 @@ if __name__ == "__main__":
     app.add_handler(
         CallbackQueryHandler(reviewjoke_callback_query_handler, pattern="^reviewjoke")
     )
+    app.add_handler(InlineQueryHandler(inline_query_handler))
 
     # jobs
     job_queue.run_repeating(callback=notify_inactive_users_callback, interval=60)
