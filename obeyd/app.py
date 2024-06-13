@@ -411,23 +411,9 @@ async def scorejoke_callback_notify_creator(context: ContextTypes.DEFAULT_TYPE):
         assert joke is not None
 
     await context.bot.send_message(
-        chat_id=REVIEW_JOKES_CHAT_ID,
+        chat_id=joke.creator_id,
         text=SCORES[str(score)]["score_notif"].format(s=scored_by_user.nickname),
         parse_mode=ParseMode.MARKDOWN_V2,
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="رد",
-                        callback_data=f"reviewjoke:{joke_id}:reject",
-                    ),
-                    InlineKeyboardButton(
-                        text="تایید",
-                        callback_data=f"reviewjoke:{joke_id}:accept",
-                    ),
-                ]
-            ]
-        ),
     )
 
 
