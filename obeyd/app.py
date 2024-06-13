@@ -84,7 +84,6 @@ async def most_rated_joke(
 def not_authenticated(f):
     @wraps(f)
     async def g(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        assert update.message
         assert update.effective_user
 
         async with async_session() as session:
@@ -93,9 +92,10 @@ def not_authenticated(f):
             )
 
         if user is not None:
-            await update.message.reply_text(
-                f"من شما رو میشناسم. تو {user.nickname} هستی."
-            )
+            if update.message:
+                await update.message.reply_text(
+                    f"من شما رو میشناسم. تو {user.nickname} هستی."
+                )
             return
 
         return await f(update, context)
@@ -106,7 +106,6 @@ def not_authenticated(f):
 def authenticated(f):
     @wraps(f)
     async def g(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        assert update.message
         assert update.effective_user
 
         async with async_session() as session:
@@ -115,7 +114,8 @@ def authenticated(f):
             )
 
         if user is None:
-            await update.message.reply_text("من شما رو میشناسم؟")
+            if update.message:
+                await update.message.reply_text("من شما رو میشناسم؟")
             return
 
         return await f(update, context, user=user)
