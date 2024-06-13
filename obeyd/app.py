@@ -8,6 +8,7 @@ import sentry_sdk
 from sqlalchemy import Select, func, select
 from sqlalchemy import update as _update
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
@@ -222,10 +223,7 @@ async def getjoke_handler(
                     [
                         InlineKeyboardButton(
                             text=score_data["emoji"],
-                            callback_data={
-                                "joke_id": joke.id,
-                                "score": int(score),
-                            },
+                            callback_data=f"scorejoke:{joke.id}:{score}",
                         )
                         for score, score_data in SCORES.items()
                     ]
@@ -341,6 +339,34 @@ async def reviewjoke_callback_query_handler(
         await update.callback_query.answer("رد شد")
 
 
+@authenticated
+async def scorejoke_callback_query_handler(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
+    assert update.effective_user
+    assert update.callback_query
+    assert isinstance(update.callback_query.data, str)
+
+    _, joke_id, score = tuple(update.callback_query.data.split(":"))
+
+    inserted = False
+    async with async_session() as session:
+        try:
+            like = Like(
+                user_id=update.effective_user.id, joke_id=int(joke_id), score=int(score)
+            )
+            session.add(like)
+            await session.commit()
+            inserted = True
+        except IntegrityError:
+            pass
+
+    if not inserted:
+        await update.callback_query.answer("شما قبلا یک بار رای داده اید!")
+    else:
+        await update.callback_query.answer(SCORES[score]["notif"])
+
+
 async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
 
@@ -397,6 +423,9 @@ if __name__ == "__main__":
             },
             fallbacks=[CommandHandler("cancel", cancel_handler)],
         )
+    )
+    app.add_handler(
+        CallbackQueryHandler(scorejoke_callback_query_handler, pattern="^scorejoke")
     )
 
     # admin
