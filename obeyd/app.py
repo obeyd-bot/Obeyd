@@ -62,7 +62,6 @@ SHOW_RANDOM_JOKE_PROB = 0.25
 START_STATES_NAME = 1
 SETNAME_STATES_NAME = 1
 NEWJOKE_STATES_TEXT = 1
-JOKE_STATES_NOTIF_NEWJOKE = 1
 
 REVIEW_JOKES_CHAT_ID = os.environ["REVIEW_JOKES_CHAT_ID"]
 ALERTS_CHAT_ID = os.environ["ALERTS_CHAT_ID"]
@@ -256,13 +255,17 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user:
     assert update.message
     assert update.effective_user
 
-    joke = (
-        await db["jokes"]
-        .aggregate([{"$match": {"accepted": True}}, {"$sample": {"size": 1}}])
-        .next()
-    )
+    joke = None
+    try:
+        joke = (
+            await db["jokes"]
+            .aggregate([{"$match": {"accepted": True}}, {"$sample": {"size": 1}}])
+            .next()
+        )
+    except StopAsyncIteration:
+        pass
 
-    if not joke:
+    if joke is None:
         await update.message.reply_text(
             "دیگه جوکی ندارم که بهت بگم 😁 میتونی به جاش تو یک جوک بهم بگی!",
             reply_markup=ReplyKeyboardMarkup(
@@ -270,7 +273,7 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user:
                 one_time_keyboard=True,
             ),
         )
-        return JOKE_STATES_NOTIF_NEWJOKE
+        return
 
     await update.message.reply_text(
         f"{joke['text']}\n\n*{joke['creator_nickname']}*",
@@ -514,7 +517,13 @@ if __name__ == "__main__":
         level=logging.INFO,
     )
 
-    app = ApplicationBuilder().read_timeout(30).write_timeout(30).token(os.environ["API_TOKEN"]).build()
+    app = (
+        ApplicationBuilder()
+        .read_timeout(30)
+        .write_timeout(30)
+        .token(os.environ["API_TOKEN"])
+        .build()
+    )
     job_queue = app.job_queue
     assert job_queue
 
