@@ -13,6 +13,7 @@ async def create_indexes():
     await db["scores"].create_index(
         ["user_id", "joke_id"], name="user_id_joke_id_unique", unique=True
     )
+    await db["recurrings"].create_index("chat_id", name="chat_id_unique", unique=True)
 
 
 if __name__ == "__main__":
