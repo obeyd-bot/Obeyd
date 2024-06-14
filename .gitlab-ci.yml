@@ -1,0 +1,26 @@
+stages:
+  - build
+  - deploy
+
+darkube_build_iraj-bot_obeyd_hamravesh-c14:
+  image: hamravesh.hamdocker.ir/public/darkube-cli:v1.1
+  interruptible: true
+  only:
+    refs:
+    - devel
+  script:
+  - IMAGE_ADDRESS="registry.hamdocker.ir/obeyd/iraj-bot"
+  - 'darkube build --push -t $IMAGE_ADDRESS:$CI_COMMIT_SHORT_SHA -t $IMAGE_ADDRESS:$CI_COMMIT_REF_SLUG
+    --workdir . --file ./Dockerfile --build-context . '
+  stage: build
+
+darkube_deploy_iraj-bot_obeyd_hamravesh-c14:
+  image: hamravesh.hamdocker.ir/public/darkube-cli:v1.1
+  interruptible: true
+  only:
+    refs:
+    - devel
+  script:
+  - darkube deploy --token ${DEPLOY_TOKEN_IRAJ_BOT_OBEYD_HAMRAVESH_C14} --app-id ${APP_ID_IRAJ_BOT_OBEYD_HAMRAVESH_C14}
+    --image-tag ${CI_COMMIT_SHORT_SHA} --job-id ${CI_JOB_ID}
+  stage: deploy
