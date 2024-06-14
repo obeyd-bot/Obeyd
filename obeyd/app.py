@@ -3,6 +3,7 @@ import os
 from datetime import datetime, time, timedelta, timezone
 from functools import wraps
 
+from alembic.command import current
 import pytz
 import sentry_sdk
 from bson import ObjectId
@@ -59,15 +60,15 @@ SCORES = {
 }
 
 RECURRING_INTERVALS = {
-    "هر روز": {
-        "code": "daily",
-        "text": "هر روز ساعت ۶ عصر",
+    "هر دقیقه": {
+        "code": "minutely",
+        "text": "هر دقیقه",
     },
     "هر ساعت": {
-        "code": "daily",
-        "text": "هر روز ساعت ۶ عصر",
+        "code": "hourly",
+        "text": "هر ساعت",
     },
-    "هر دقیقه": {
+    "هر روز": {
         "code": "daily",
         "text": "هر روز ساعت ۶ عصر",
     },
@@ -576,7 +577,19 @@ async def setrecurring_handler_interval(
         "interval": interval["code"],
         "created_at": datetime.now(),
     }
-    await db["recurrings"].insert_one(recurring)
+    await db["recurrings"].update_one(
+        {"chat_id": chat_id},
+        {
+            "$set": {
+                "created_by_user_id": recurring["created_by_user_id"],
+                "interval": recurring["interval"],
+            },
+            "$setOnInsert": {
+                "created_at": recurring["created_at"],
+            },
+        },
+        upsert=True,
+    )
 
     schedule_recurring(recurring)
 
@@ -589,23 +602,33 @@ async def setrecurring_handler_interval(
 
 def schedule_recurring(recurring: dict):
     assert job_queue
+
+    job_name = f"recurring-{recurring['chat_id']}"
+
+    current_jobs = job_queue.get_jobs_by_name(name=job_name)
+    for job in current_jobs:
+        job.schedule_removal()
+
     if recurring["interval"] == "daily":
         job_queue.run_daily(
             recurring_joke_callback,
             data=recurring,
             time=time(hour=18, tzinfo=pytz.timezone("Asia/Tehran")),
+            name=job_name,
         )
     elif recurring["interval"] == "hourly":
         job_queue.run_repeating(
             recurring_joke_callback,
             data=recurring,
             interval=timedelta(hours=1),
+            name=job_name,
         )
     elif recurring["interval"] == "minutely":
         job_queue.run_repeating(
             recurring_joke_callback,
             data=recurring,
             interval=timedelta(minutes=1),
+            name=job_name,
         )
 
 
