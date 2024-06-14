@@ -646,13 +646,17 @@ async def setrecurring_handler_interval(
 
     chat_id = update.effective_chat.id
     created_by_user_id = update.effective_user.id
-    interval = RECURRING_INTERVALS[update.message.text]
+    interval = RECURRING_INTERVALS.get(update.message.text.strip())
+
+    if interval is None:
+        await update.message.reply_text("هان؟ متوجه نشدم 🤔")
+        return SETRECURRING_STATES_INTERVAL
 
     recurring = {
         "chat_id": chat_id,
         "created_by_user_id": created_by_user_id,
         "interval": interval["code"],
-        "created_at": datetime.now(),
+        "created_at": datetime.now(tz=timezone.utc),
     }
     await db["recurrings"].update_one(
         {"chat_id": chat_id},
