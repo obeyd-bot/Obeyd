@@ -514,7 +514,7 @@ if __name__ == "__main__":
         level=logging.INFO,
     )
 
-    app = ApplicationBuilder().token(os.environ["API_TOKEN"]).build()
+    app = ApplicationBuilder().read_timeout(30).write_timeout(30).token(os.environ["API_TOKEN"]).build()
     job_queue = app.job_queue
     assert job_queue
 
