@@ -3,9 +3,8 @@ import os
 from datetime import datetime, timedelta
 from functools import wraps
 
-from bson import ObjectId
-from motor.motor_asyncio import AsyncIOMotorClient
 import sentry_sdk
+from bson import ObjectId
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -26,6 +25,8 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+
+from obeyd.db import db
 
 SCORES = {
     "1": {
@@ -80,7 +81,12 @@ def log_activity(kind):
             assert update.effective_user
 
             await db["activities"].insert_one(
-                {"kind": kind, "user_id": update.effective_user.id, "data": {}}
+                {
+                    "kind": kind,
+                    "user_id": update.effective_user.id,
+                    "data": {},
+                    "created_at": datetime.now(),
+                }
             )
 
             return await f(update, context, **kwargs)
@@ -144,6 +150,7 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
         {
             "user_id": update.effective_user.id,
             "nickname": update.message.text,
+            "joined_at": datetime.now(),
         }
     )
 
@@ -275,6 +282,7 @@ async def newjoke_handler_text(
         "text": update.message.text,
         "creator_id": user["user_id"],
         "creator_nickname": user["nickname"],
+        "created_at": datetime.now(),
     }
     await db["jokes"].insert_one(joke)
 
@@ -325,7 +333,12 @@ async def scorejoke_callback_query_handler(
 
     _, joke_id, score = tuple(update.callback_query.data.split(":"))
 
-    joke_score = {"user_id": user["_id"], "joke_id": joke_id, "score": int(score)}
+    joke_score = {
+        "user_id": user["_id"],
+        "joke_id": joke_id,
+        "score": int(score),
+        "created_at": datetime.now(),
+    }
     await db["scores"].insert_one(joke_score)
 
     await update.callback_query.answer(SCORES[score]["notif"])
@@ -428,9 +441,6 @@ if __name__ == "__main__":
     app = ApplicationBuilder().token(os.environ["API_TOKEN"]).build()
     job_queue = app.job_queue
     assert job_queue
-
-    client = AsyncIOMotorClient(os.environ["MONGODB_URI"])
-    db = client[os.environ["MONGODB_DB"]]
 
     app.add_handler(
         ConversationHandler(

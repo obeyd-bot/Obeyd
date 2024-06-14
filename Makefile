@@ -1,12 +1,9 @@
 export PYTHONPATH = .
 
-.PHONY: db-upgrade db-revision start-server clean
+.PHONY: db-upgrade start-server clean
 
 db-upgrade:
-	alembic upgrade head
-
-db-revision:
-	alembic revision --autogenerate
+	python3 obeyd/db.py
 
 start-server:
 	python3 obeyd/app.py
