@@ -517,13 +517,6 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                     message_text=format_joke(joke), parse_mode=ParseMode.MARKDOWN_V2
                 ),
             ),
-            InlineQueryResultArticle(
-                id="setrecurring",
-                title="چند وقت یک بار جوک بگو!",
-                input_message_content=InputTextMessageContent(
-                    message_text="/setrecurring", parse_mode=ParseMode.MARKDOWN_V2
-                ),
-            ),
         ],
         cache_time=0,
     )
