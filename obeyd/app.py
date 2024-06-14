@@ -7,7 +7,6 @@ from functools import wraps
 import traceback
 from typing import Optional
 
-from click import Option
 import pytz
 import sentry_sdk
 from bson import ObjectId
