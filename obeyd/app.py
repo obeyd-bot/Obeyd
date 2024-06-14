@@ -3,7 +3,6 @@ import os
 from datetime import datetime, time, timedelta, timezone
 from functools import wraps
 
-from aiogram.types import inline_keyboard_markup
 import pytz
 import sentry_sdk
 from bson import ObjectId
