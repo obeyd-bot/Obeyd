@@ -1,16 +1,11 @@
 import logging
 import os
-import random
 from datetime import datetime, timedelta
 from functools import wraps
-from typing import Optional, Tuple
 
+from bson import ObjectId
+from motor.motor_asyncio import AsyncIOMotorClient
 import sentry_sdk
-from sqlalchemy import Select, func, select
-from sqlalchemy import update as _update
-from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -31,8 +26,6 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-
-from obeyd.models import Activity, Joke, Like, SeenJoke, User, async_session
 
 SCORES = {
     "1": {
@@ -72,54 +65,12 @@ REVIEW_JOKES_CHAT_ID = os.environ["REVIEW_JOKES_CHAT_ID"]
 ALERTS_CHAT_ID = os.environ["ALERTS_CHAT_ID"]
 
 
-def accepted_jokes() -> Select[Tuple[Joke]]:
-    return select(Joke).filter(Joke.accepted.is_(True))
-
-
 async def alert_admin(context: ContextTypes.DEFAULT_TYPE, msg: str):
     await context.bot.send_message(chat_id=ALERTS_CHAT_ID, text=msg)
 
 
-def filter_seen_jokes(
-    filter: Select[Tuple[Joke]], by_user_id: int
-) -> Select[Tuple[Joke]]:
-    seen_jokes = (
-        select(SeenJoke.joke_id).where(SeenJoke.user_id == by_user_id).subquery()
-    )
-    return filter.join(seen_jokes, Joke.id == seen_jokes.c.joke_id, isouter=True).where(
-        seen_jokes.c.joke_id.is_(None)
-    )
-
-
-async def random_joke(
-    session: AsyncSession, filter: Optional[Select[Tuple[Joke]]]
-) -> Optional[Joke]:
-    if filter is None:
-        filter = select(Joke)
-    return await session.scalar(filter.order_by(func.random()).limit(1))
-
-
-async def most_rated_joke(
-    session: AsyncSession, filter: Select[Tuple[Joke]]
-) -> Optional[Joke]:
-    jokes_scores = (
-        select(Like.joke_id, func.avg(Like.score).label("avg_score"))
-        .group_by(Like.joke_id)
-        .subquery()
-    )
-    return await session.scalar(
-        filter.join(
-            jokes_scores,
-            Joke.id == jokes_scores.c.joke_id,
-            isouter=True,
-        )
-        .order_by(jokes_scores.c.avg_score)
-        .limit(1)
-    )
-
-
-def format_joke(joke: Joke):
-    return f"{joke.text}\n\n*{joke.creator_nickname}*"
+def format_joke(joke: dict):
+    return f"{joke['text']}\n\n*{joke['creator_nickname']}*"
 
 
 def log_activity(kind):
@@ -128,12 +79,9 @@ def log_activity(kind):
         async def h(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
             assert update.effective_user
 
-            async with async_session() as session:
-                activity = Activity(
-                    kind=kind, user_id=update.effective_user.id, data={}
-                )
-                session.add(activity)
-                await session.commit()
+            await db["activities"].insert_one(
+                {"kind": kind, "user_id": update.effective_user.id, "data": {}}
+            )
 
             return await f(update, context, **kwargs)
 
@@ -147,15 +95,12 @@ def not_authenticated(f):
     async def g(update: Update, context: ContextTypes.DEFAULT_TYPE):
         assert update.effective_user
 
-        async with async_session() as session:
-            user = await session.scalar(
-                select(User).where(User.user_id == update.effective_user.id)
-            )
+        user = await db["users"].find_one({"user_id": update.effective_user.id})
 
         if user is not None:
             if update.message:
                 await update.message.reply_text(
-                    f"من شما رو میشناسم. تو {user.nickname} هستی."
+                    f"من شما رو میشناسم. تو {user['nickname']} هستی."
                 )
             return
 
@@ -169,10 +114,7 @@ def authenticated(f):
     async def g(update: Update, context: ContextTypes.DEFAULT_TYPE):
         assert update.effective_user
 
-        async with async_session() as session:
-            user = await session.scalar(
-                select(User).where(User.user_id == update.effective_user.id)
-            )
+        user = await db["users"].find_one({"user_id": update.effective_user.id})
 
         if user is None:
             if update.message:
@@ -198,13 +140,12 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
     assert update.message
     assert update.effective_user
 
-    async with async_session() as session:
-        await session.execute(
-            insert(User).values(
-                user_id=update.effective_user.id, nickname=update.message.text
-            )
-        )
-        await session.commit()
+    await db["users"].insert_one(
+        {
+            "user_id": update.effective_user.id,
+            "nickname": update.message.text,
+        }
+    )
 
     await update.message.reply_text(f"سلام {update.message.text}!")
 
@@ -214,7 +155,7 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
 @authenticated
 @log_activity("setname")
 async def setname_handler(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict
 ):
     assert update.message
 
@@ -225,18 +166,14 @@ async def setname_handler(
 
 @authenticated
 async def setname_handler_name(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict
 ):
     assert update.message
     assert update.effective_user
 
-    async with async_session() as session:
-        await session.execute(
-            _update(User)
-            .where(User.user_id == update.effective_user.id)
-            .values(nickname=update.message.text)
-        )
-        await session.commit()
+    await db["users"].update_one(
+        {"user_id": user["user_id"]}, {"$set": {"nickname": update.message.text}}
+    )
 
     await update.message.reply_text(f"سلام {update.message.text}!")
 
@@ -246,62 +183,51 @@ async def setname_handler_name(
 @authenticated
 @log_activity("getname")
 async def getname_handler(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict
 ):
     assert update.message
     assert update.effective_user
 
-    await update.message.reply_text(f"تو {user.nickname} هستی!")
+    await update.message.reply_text(f"تو {user['nickname']} هستی!")
 
 
 @authenticated
 @log_activity("joke")
-async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User):
+async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict):
     assert update.message
     assert update.effective_user
 
-    async with async_session() as session:
-        filter = filter_seen_jokes(
-            filter=accepted_jokes(), by_user_id=update.effective_user.id
-        )
+    joke = (
+        await db["jokes"]
+        .aggregate([{"$match": {"accepted": True}}, {"$sample": {"size": 1}}])
+        .next()
+    )
 
-        if random.random() < SHOW_RANDOM_JOKE_PROB:
-            joke = await random_joke(session, filter)
-        else:
-            joke = await most_rated_joke(session, filter)
+    if not joke:
+        await update.message.reply_text("جوکی ندارم که برات بگم :(")
+        return
 
-        if not joke:
-            await update.message.reply_text("جوکی ندارم که برات بگم :(")
-            return
-
-        await update.message.reply_text(
-            f"{joke.text}\n\n*{joke.creator_nickname}*",
-            parse_mode=ParseMode.MARKDOWN_V2,
-            reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [
-                        InlineKeyboardButton(
-                            text=score_data["emoji"],
-                            callback_data=f"scorejoke:{joke.id}:{score}",
-                        )
-                        for score, score_data in SCORES.items()
-                    ]
+    await update.message.reply_text(
+        f"{joke.text}\n\n*{joke.creator_nickname}*",
+        parse_mode=ParseMode.MARKDOWN_V2,
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text=score_data["emoji"],
+                        callback_data=f"scorejoke:{joke.id}:{score}",
+                    )
+                    for score, score_data in SCORES.items()
                 ]
-            ),
-        )
-
-        await session.execute(
-            insert(SeenJoke)
-            .values(user_id=update.effective_user.id, joke_id=joke.id)
-            .on_conflict_do_nothing(constraint="seen_jokes_user_id_joke_id_key")
-        )
-        await session.commit()
+            ]
+        ),
+    )
 
 
 @authenticated
 @log_activity("newjoke")
 async def newjoke_handler(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict
 ):
     assert update.message
 
@@ -314,7 +240,7 @@ async def newjoke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE):
     assert context.job
     assert isinstance(context.job.data, dict)
 
-    joke = context.job.data["joke"]
+    joke = context.job.data
 
     await context.bot.send_message(
         chat_id=REVIEW_JOKES_CHAT_ID,
@@ -325,11 +251,11 @@ async def newjoke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE):
                 [
                     InlineKeyboardButton(
                         text="رد",
-                        callback_data=f"reviewjoke:{joke.id}:reject",
+                        callback_data=f"reviewjoke:{joke['_id']}:reject",
                     ),
                     InlineKeyboardButton(
                         text="تایید",
-                        callback_data=f"reviewjoke:{joke.id}:accept",
+                        callback_data=f"reviewjoke:{joke['_id']}:accept",
                     ),
                 ]
             ]
@@ -339,26 +265,23 @@ async def newjoke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE):
 
 @authenticated
 async def newjoke_handler_text(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict
 ):
     assert update.message
     assert update.effective_user
     assert context.job_queue
 
-    async with async_session() as session:
-        joke = Joke(
-            text=update.message.text,
-            creator_id=user.user_id,
-            creator_nickname=user.nickname,
-        )
-        session.add(joke)
-        await session.commit()
-        await session.refresh(joke)
+    joke = {
+        "text": update.message.text,
+        "creator_id": user["user_id"],
+        "creator_nickname": user["nickname"],
+    }
+    await db["jokes"].insert_one(joke)
 
     context.job_queue.run_once(
         callback=newjoke_callback_notify_admin,
         when=0,
-        data={"joke": joke},
+        data=joke,
     )
 
     await update.message.reply_text("دریافت شد!")
@@ -381,11 +304,9 @@ async def reviewjoke_callback_query_handler(
     else:
         raise Exception("expected accept or reject")
 
-    async with async_session() as session:
-        await session.execute(
-            _update(Joke).where(Joke.id == int(joke_id)).values(accepted=accepted)
-        )
-        await session.commit()
+    await db["jokes"].update_one(
+        {"_id": ObjectId(joke_id)}, {"$set": {"accepted": accepted}}
+    )
 
     if accepted:
         await update.callback_query.answer("تایید شد")
@@ -396,7 +317,7 @@ async def reviewjoke_callback_query_handler(
 @authenticated
 @log_activity("scorejoke")
 async def scorejoke_callback_query_handler(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, user: User
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict
 ):
     assert update.effective_user
     assert update.callback_query
@@ -404,53 +325,34 @@ async def scorejoke_callback_query_handler(
 
     _, joke_id, score = tuple(update.callback_query.data.split(":"))
 
-    inserted = False
-    async with async_session() as session:
-        try:
-            like = Like(
-                user_id=update.effective_user.id, joke_id=int(joke_id), score=int(score)
-            )
-            session.add(like)
-            await session.commit()
-            inserted = True
-        except IntegrityError:
-            pass
+    joke_score = {"user_id": user["_id"], "joke_id": joke_id, "score": int(score)}
+    await db["scores"].insert_one(joke_score)
 
-    if not inserted:
-        await update.callback_query.answer("شما قبلا یک بار رای داده اید")
-    else:
-        await update.callback_query.answer(SCORES[score]["notif"])
-        assert context.job_queue
-        context.job_queue.run_once(
-            callback=scorejoke_callback_notify_creator,
-            when=0,
-            data={
-                "scored_by_user_id": update.effective_user.id,
-                "joke_id": int(joke_id),
-                "score": int(score),
-            },
-        )
+    await update.callback_query.answer(SCORES[score]["notif"])
+    assert context.job_queue
+    context.job_queue.run_once(
+        callback=scorejoke_callback_notify_creator,
+        when=0,
+        data=joke_score,
+    )
 
 
 async def scorejoke_callback_notify_creator(context: ContextTypes.DEFAULT_TYPE):
     assert context.job
     assert isinstance(context.job.data, dict)
 
-    scored_by_user_id = context.job.data["scored_by_user_id"]
-    joke_id = context.job.data["joke_id"]
-    score = context.job.data["score"]
+    joke_score = context.job.data
 
-    async with async_session() as session:
-        scored_by_user = await session.scalar(
-            select(User).where(User.user_id == scored_by_user_id)
-        )
-        assert scored_by_user is not None
-        joke = await session.scalar(select(Joke).where(Joke.id == joke_id))
-        assert joke is not None
+    joke = await db["jokes"].find_one({"_id": joke_score["joke_id"]})
+    scored_by_user = await db["users"].find_one({"_id": joke_score["user_id"]})
+    assert joke
+    assert scored_by_user
 
     await context.bot.send_message(
-        chat_id=joke.creator_id,
-        text=SCORES[str(score)]["score_notif"].format(s=scored_by_user.nickname),
+        chat_id=joke["creator_id"],
+        text=SCORES[str(joke_score["score"])]["score_notif"].format(
+            s=scored_by_user["nickname"]
+        ),
         parse_mode=ParseMode.MARKDOWN_V2,
     )
 
@@ -469,9 +371,12 @@ async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.inline_query
 
-    async with async_session() as session:
-        joke = await random_joke(session, accepted_jokes())
-        assert joke is not None
+    joke = (
+        await db["jokes"]
+        .aggregate([{"$match": {"accepted": True}}, {"$sample": {"size": 1}}])
+        .next()
+    )
+    assert joke is not None
 
     await update.inline_query.answer(
         results=[
@@ -489,27 +394,22 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 
 async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
     current_time = datetime.now()
-    async with async_session() as session:
-        result = await session.scalars(
-            select(Activity.user_id)
-            .group_by(Activity.user_id)
-            .having(func.max(Activity.created_at) <= current_time - timedelta(days=1))
-        )
 
-    found = False
-    for user_id in result:
-        found = True
+    inactive_users = db["activities"].aggregate(
+        [
+            {"$group": {"_id": "$user_id", "last_activity": {"$max": "$created_at"}}},
+            {"$match": {"last_activity": {"$lt": current_time - timedelta(days=1)}}},
+        ]
+    )
+
+    async for user in inactive_users:
         await context.bot.send_message(
-            chat_id=user_id,
+            chat_id=user["_id"],
             text=f"یه جوک بگم؟",
             parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=ReplyKeyboardMarkup(
                 keyboard=[[KeyboardButton(text="/joke")]], one_time_keyboard=True
             ),
-        )
-    if not found:
-        await context.bot.send_message(
-            chat_id=ALERTS_CHAT_ID, text="هیچ کاربر غیرفعالی وجود نداشت"
         )
 
 
@@ -528,6 +428,9 @@ if __name__ == "__main__":
     app = ApplicationBuilder().token(os.environ["API_TOKEN"]).build()
     job_queue = app.job_queue
     assert job_queue
+
+    client = AsyncIOMotorClient(os.environ["MONGODB_URI"])
+    db = client[os.environ["MONGODB_DB"]]
 
     app.add_handler(
         ConversationHandler(
