@@ -1,6 +1,6 @@
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 import sentry_sdk
@@ -85,7 +85,7 @@ def log_activity(kind):
                     "kind": kind,
                     "user_id": update.effective_user.id,
                     "data": {},
-                    "created_at": datetime.now(),
+                    "created_at": datetime.now(tz=timezone.utc),
                 }
             )
 
@@ -150,7 +150,7 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
         {
             "user_id": update.effective_user.id,
             "nickname": update.message.text,
-            "joined_at": datetime.now(),
+            "joined_at": datetime.now(tz=timezone.utc),
         }
     )
 
@@ -282,7 +282,7 @@ async def newjoke_handler_text(
         "text": update.message.text,
         "creator_id": user["user_id"],
         "creator_nickname": user["nickname"],
-        "created_at": datetime.now(),
+        "created_at": datetime.now(tz=timezone.utc),
     }
     await db["jokes"].insert_one(joke)
 
@@ -337,7 +337,7 @@ async def scorejoke_callback_query_handler(
         "user_id": user["_id"],
         "joke_id": joke_id,
         "score": int(score),
-        "created_at": datetime.now(),
+        "created_at": datetime.now(tz=timezone.utc),
     }
     await db["scores"].insert_one(joke_score)
 
@@ -406,7 +406,7 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
-    current_time = datetime.now()
+    current_time = datetime.now(tz=timezone.utc)
 
     inactive_users = db["activities"].aggregate(
         [
