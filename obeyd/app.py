@@ -5,7 +5,9 @@ import os
 from datetime import datetime, time, timedelta, timezone
 from functools import wraps
 import traceback
+from typing import Optional
 
+from click import Option
 import pytz
 import sentry_sdk
 from bson import ObjectId
@@ -72,8 +74,6 @@ RECURRING_INTERVALS = {
     },
 }
 
-
-SHOW_RANDOM_JOKE_PROB = 0.25
 
 START_STATES_NAME = 1
 SETNAME_STATES_NAME = 1
@@ -302,12 +302,48 @@ async def random_joke():
         return None
 
 
+async def most_rated_joke(not_viewed_by_user_id: Optional[int]):
+    views = (
+        await db["joke_views"].find({"user_id": not_viewed_by_user_id}).to_list(None)
+    )
+
+    try:
+        return (
+            await db["jokes"]
+            .aggregate(
+                [
+                    {
+                        "$match": {
+                            "accepted": True,
+                            "_id": {"$nin": [view["joke_id"] for view in views]},
+                        }
+                    },
+                    {
+                        "$lookup": {
+                            "from": "joke_views",
+                            "localField": "_id",
+                            "foreignField": "joke_id",
+                            "as": "views",
+                        },
+                    },
+                    {"$unwind": "$views"},
+                    {"$set": {"views.score": {"$ifNull": ["$views.score", 1]}}},
+                    {"$group": {"_id": "$_id", "avg_score": {"$avg": "$views.score"}}},
+                    {"$sort": {"avg_score": -1}},
+                ]
+            )
+            .next()
+        )
+    except StopAsyncIteration:
+        return None
+
+
 @log_activity("joke")
 async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
     assert update.effective_user
 
-    joke = await random_joke()
+    joke = await most_rated_joke(not_viewed_by_user_id=update.effective_user.id)
 
     if joke is None:
         await update.message.reply_text(
