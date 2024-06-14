@@ -111,6 +111,7 @@ def not_authenticated(f):
                     reply_markup=ReplyKeyboardMarkup(
                         keyboard=[[KeyboardButton(text="/joke")]],
                         one_time_keyboard=True,
+                        resize_keyboard=True,
                     ),
                 )
             return
@@ -134,6 +135,7 @@ def authenticated(f):
                     reply_markup=ReplyKeyboardMarkup(
                         keyboard=[[KeyboardButton(text="/start")]],
                         one_time_keyboard=True,
+                        resize_keyboard=True,
                     ),
                 )
             return
@@ -179,6 +181,7 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="/joke")]],
             one_time_keyboard=True,
+            resize_keyboard=True,
         ),
     )
 
@@ -195,7 +198,9 @@ async def setname_handler(
     await update.message.reply_text(
         "حواست باشه که اسمت قبلیت روی جوک هایی که تا الان نوشتی باقی میمونه. حالا اسمت رو بهم بگو.",
         reply_markup=ReplyKeyboardMarkup(
-            [[KeyboardButton(text="/cancel")]], one_time_keyboard=True
+            [[KeyboardButton(text="/cancel")]],
+            one_time_keyboard=True,
+            resize_keyboard=True,
         ),
     )
 
@@ -225,6 +230,7 @@ async def setname_handler_name(
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="/joke")]],
             one_time_keyboard=True,
+            resize_keyboard=True,
         ),
     )
 
@@ -245,6 +251,7 @@ async def getname_handler(
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="/joke")]],
             one_time_keyboard=True,
+            resize_keyboard=True,
         ),
     )
 
@@ -271,6 +278,7 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user:
             reply_markup=ReplyKeyboardMarkup(
                 keyboard=[[KeyboardButton(text="/newjoke")]],
                 one_time_keyboard=True,
+                resize_keyboard=True,
             ),
         )
         return
@@ -360,6 +368,7 @@ async def newjoke_handler_text(
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="/joke"), KeyboardButton(text="/newjoke")]],
             one_time_keyboard=True,
+            resize_keyboard=True,
         ),
     )
 
@@ -454,6 +463,7 @@ async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="/joke")]],
             one_time_keyboard=True,
+            resize_keyboard=True,
         ),
     )
 
@@ -500,7 +510,9 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
             text=f"یک جوک بگم؟",
             parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=ReplyKeyboardMarkup(
-                keyboard=[[KeyboardButton(text="/joke")]], one_time_keyboard=True
+                keyboard=[[KeyboardButton(text="/joke")]],
+                one_time_keyboard=True,
+                resize_keyboard=True,
             ),
         )
 
