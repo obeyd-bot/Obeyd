@@ -357,7 +357,7 @@ async def scorejoke_callback_notify_creator(context: ContextTypes.DEFAULT_TYPE):
     joke_score = context.job.data
 
     joke = await db["jokes"].find_one({"_id": joke_score["joke_id"]})
-    scored_by_user = await db["users"].find_one({"_id": joke_score["user_id"]})
+    scored_by_user = await db["users"].find_one({"user_id": joke_score["user_id"]})
     assert joke
     assert scored_by_user
 
