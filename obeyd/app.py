@@ -496,7 +496,7 @@ async def scorejoke_callback_query_handler(
 
     await db["joke_views"].update_one(
         {"user_id": update.effective_user.id, "joke_id": joke_id},
-        {"score": int(score), "scored_at": datetime.now(tz=timezone.utc)},
+        {"$set": {"score": int(score), "scored_at": datetime.now(tz=timezone.utc)}},
     )
 
     await update.callback_query.answer(SCORES[score]["notif"])
