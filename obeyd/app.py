@@ -205,7 +205,7 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
     except DuplicateKeyError:
         await update.message.reply_text(
-            "این اسم رو قبلا یکی استفاده کرده. یک اسم دیگه برای خودت انتخاب کن."
+            "این اسم رو قبلا یکی استفاده کرده 🙁 یک اسم دیگه انتخاب کن"
         )
         return START_STATES_NAME
 
@@ -230,7 +230,7 @@ async def setname_handler(
     assert update.message
 
     await update.message.reply_text(
-        "حواست باشه که اسمت قبلیت روی جوک هایی که تا الان نوشتی باقی میمونه. حالا اسمت رو بهم بگو.",
+        "حواست باشه که اسم قبلیت روی جوک هایی که تا الان فرستادی باقی میمونه. حالا اسمت رو بهم بگو.",
         reply_markup=ReplyKeyboardMarkup(
             [[KeyboardButton(text="/cancel")]],
             one_time_keyboard=True,
@@ -254,12 +254,12 @@ async def setname_handler_name(
         )
     except DuplicateKeyError:
         await update.message.reply_text(
-            "این اسم رو قبلا یکی استفاده کرده. یک اسم دیگه انتخاب کن."
+            "این اسم رو قبلا یکی استفاده کرده 🙁 یک اسم دیگه انتخاب کن"
         )
         return SETNAME_STATES_NAME
 
     await update.message.reply_text(
-        f"سلام *{update.message.text}*! برای اینکه برات جوک بفرستم از دستور /joke استفاده کن.",
+        f"سلام *{update.message.text}* 🫡 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن 🙂",
         parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="/joke")]],
