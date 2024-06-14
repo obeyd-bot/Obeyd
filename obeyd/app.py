@@ -3,7 +3,6 @@ import os
 from datetime import datetime, time, timedelta, timezone
 from functools import wraps
 
-from alembic.command import current
 import pytz
 import sentry_sdk
 from bson import ObjectId
