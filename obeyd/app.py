@@ -325,8 +325,8 @@ async def most_rated_joke(not_viewed_by_user_id: Optional[int]):
                             "as": "views",
                         },
                     },
-                    {"$unwind": "$views"},
-                    {"$set": {"views.score": {"$ifNull": ["$views.score", 1]}}},
+                    {"$unwind": {"path": "$views", "preserveNullAndEmptyArrays": True}},
+                    {"$set": {"views.score": {"$ifNull": ["$views.score", 3]}}},
                     {"$group": {"_id": "$_id", "avg_score": {"$avg": "$views.score"}}},
                     {"$sort": {"avg_score": -1}},
                 ]
