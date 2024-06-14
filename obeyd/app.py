@@ -412,7 +412,7 @@ async def scorejoke_callback_query_handler(
     _, joke_id, score = tuple(update.callback_query.data.split(":"))
 
     joke_score = {
-        "user_id": user["_id"],
+        "user_id": user["user_id"],
         "joke_id": joke_id,
         "score": int(score),
         "created_at": datetime.now(tz=timezone.utc),
