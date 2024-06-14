@@ -553,7 +553,9 @@ async def setrecurring_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                     KeyboardButton(text=interval)
                     for interval in RECURRING_INTERVALS.keys()
                 ]
-            ]
+            ],
+            one_time_keyboard=True,
+            resize_keyboard=True,
         ),
     )
     return SETRECURRING_STATES_INTERVAL
