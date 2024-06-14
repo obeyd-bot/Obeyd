@@ -306,9 +306,8 @@ async def random_joke():
         return None
 
 
-@authenticated
 @log_activity("joke")
-async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict):
+async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
     assert update.effective_user
 
@@ -340,33 +339,6 @@ async def newjoke_handler(
     await update.message.reply_text("بگو 😁")
 
     return NEWJOKE_STATES_TEXT
-
-
-async def newjoke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE):
-    assert context.job
-    assert isinstance(context.job.data, dict)
-
-    joke = context.job.data
-
-    await context.bot.send_message(
-        chat_id=REVIEW_JOKES_CHAT_ID,
-        text=f"جوک جدیدی ارسال شده است:\n\n{format_joke(joke)}",
-        parse_mode=ParseMode.MARKDOWN_V2,
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="رد",
-                        callback_data=f"reviewjoke:{joke['_id']}:reject",
-                    ),
-                    InlineKeyboardButton(
-                        text="تایید",
-                        callback_data=f"reviewjoke:{joke['_id']}:accept",
-                    ),
-                ]
-            ]
-        ),
-    )
 
 
 @authenticated
@@ -403,6 +375,33 @@ async def newjoke_handler_text(
     return ConversationHandler.END
 
 
+async def newjoke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE):
+    assert context.job
+    assert isinstance(context.job.data, dict)
+
+    joke = context.job.data
+
+    await context.bot.send_message(
+        chat_id=REVIEW_JOKES_CHAT_ID,
+        text=f"جوک جدیدی ارسال شده است:\n\n{format_joke(joke)}",
+        parse_mode=ParseMode.MARKDOWN_V2,
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="رد",
+                        callback_data=f"reviewjoke:{joke['_id']}:reject",
+                    ),
+                    InlineKeyboardButton(
+                        text="تایید",
+                        callback_data=f"reviewjoke:{joke['_id']}:accept",
+                    ),
+                ]
+            ]
+        ),
+    )
+
+
 async def reviewjoke_callback_query_handler(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -428,10 +427,9 @@ async def reviewjoke_callback_query_handler(
         await update.callback_query.answer("رد شد")
 
 
-@authenticated
 @log_activity("scorejoke")
 async def scorejoke_callback_query_handler(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict
+    update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     assert update.effective_user
     assert update.callback_query
@@ -440,7 +438,7 @@ async def scorejoke_callback_query_handler(
     _, joke_id, score = tuple(update.callback_query.data.split(":"))
 
     joke_score = {
-        "user_id": user["user_id"],
+        "user_id": update.effective_user.id,
         "joke_id": joke_id,
         "score": int(score),
         "created_at": datetime.now(tz=timezone.utc),
