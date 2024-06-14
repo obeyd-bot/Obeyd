@@ -215,7 +215,7 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return START_STATES_NAME
 
     await update.message.reply_text(
-        f"سلام *{update.message.text}*! برای اینکه برات جوک بفرستم از دستور /joke استفاده کن.",
+        f"سلام *{update.message.text}* 🫡 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن 🙂",
         parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="/joke")]],
