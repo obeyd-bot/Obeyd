@@ -5,6 +5,7 @@ from functools import wraps
 
 import sentry_sdk
 from bson import ObjectId
+from pymongo.errors import DuplicateKeyError
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -61,6 +62,7 @@ SHOW_RANDOM_JOKE_PROB = 0.25
 START_STATES_NAME = 1
 SETNAME_STATES_NAME = 1
 NEWJOKE_STATES_TEXT = 1
+JOKE_STATES_NOTIF_NEWJOKE = 1
 
 REVIEW_JOKES_CHAT_ID = os.environ["REVIEW_JOKES_CHAT_ID"]
 ALERTS_CHAT_ID = os.environ["ALERTS_CHAT_ID"]
@@ -106,7 +108,11 @@ def not_authenticated(f):
         if user is not None:
             if update.message:
                 await update.message.reply_text(
-                    f"من شما رو میشناسم. تو {user['nickname']} هستی."
+                    f"{user['nickname']}! ما قبلا با هم آشنا شدیم! برای اینکه برات جوک بفرستم از دستور /joke استفاده کن.",
+                    reply_markup=ReplyKeyboardMarkup(
+                        keyboard=[[KeyboardButton(text="/joke")]],
+                        one_time_keyboard=True,
+                    ),
                 )
             return
 
@@ -124,7 +130,13 @@ def authenticated(f):
 
         if user is None:
             if update.message:
-                await update.message.reply_text("من شما رو میشناسم؟")
+                await update.message.reply_text(
+                    "قبل از هر چیز، از دستور /start استفاده کن تا با هم آشنا بشیم.",
+                    reply_markup=ReplyKeyboardMarkup(
+                        keyboard=[[KeyboardButton(text="/start")]],
+                        one_time_keyboard=True,
+                    ),
+                )
             return
 
         return await f(update, context, user=user)
@@ -136,7 +148,9 @@ def authenticated(f):
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
 
-    await update.message.reply_text("سلام. اسمت رو بهم بگو!")
+    await update.message.reply_text(
+        "به به! خوش اومدی! من ایرجم. میتونی من رو توی هر چتی منشن کنی تا جوک بفرستم 😁 اسمت رو بهم میگی؟"
+    )
 
     return START_STATES_NAME
 
@@ -146,15 +160,28 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
     assert update.message
     assert update.effective_user
 
-    await db["users"].insert_one(
-        {
-            "user_id": update.effective_user.id,
-            "nickname": update.message.text,
-            "joined_at": datetime.now(tz=timezone.utc),
-        }
-    )
+    try:
+        await db["users"].insert_one(
+            {
+                "user_id": update.effective_user.id,
+                "nickname": update.message.text,
+                "joined_at": datetime.now(tz=timezone.utc),
+            }
+        )
+    except DuplicateKeyError:
+        await update.message.reply_text(
+            "این اسم رو قبلا یکی استفاده کرده. یک اسم دیگه برای خودت انتخاب کن."
+        )
+        return START_STATES_NAME
 
-    await update.message.reply_text(f"سلام {update.message.text}!")
+    await update.message.reply_text(
+        f"سلام *{update.message.text}*! برای اینکه برات جوک بفرستم از دستور /joke استفاده کن.",
+        parse_mode=ParseMode.MARKDOWN_V2,
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="/joke")]],
+            one_time_keyboard=True,
+        ),
+    )
 
     return ConversationHandler.END
 
@@ -166,7 +193,12 @@ async def setname_handler(
 ):
     assert update.message
 
-    await update.message.reply_text("اسمت رو بهم بگو.")
+    await update.message.reply_text(
+        "حواست باشه که اسمت قبلیت روی جوک هایی که تا الان نوشتی باقی میمونه. حالا اسمت رو بهم بگو.",
+        reply_markup=ReplyKeyboardMarkup(
+            [[KeyboardButton(text="/cancel")]], one_time_keyboard=True
+        ),
+    )
 
     return SETNAME_STATES_NAME
 
@@ -178,11 +210,24 @@ async def setname_handler_name(
     assert update.message
     assert update.effective_user
 
-    await db["users"].update_one(
-        {"user_id": user["user_id"]}, {"$set": {"nickname": update.message.text}}
-    )
+    try:
+        await db["users"].update_one(
+            {"user_id": user["user_id"]}, {"$set": {"nickname": update.message.text}}
+        )
+    except DuplicateKeyError:
+        await update.message.reply_text(
+            "این اسم رو قبلا یکی استفاده کرده. یک اسم دیگه انتخاب کن."
+        )
+        return SETNAME_STATES_NAME
 
-    await update.message.reply_text(f"سلام {update.message.text}!")
+    await update.message.reply_text(
+        f"سلام *{update.message.text}*! برای اینکه برات جوک بفرستم از دستور /joke استفاده کن.",
+        parse_mode=ParseMode.MARKDOWN_V2,
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="/joke")]],
+            one_time_keyboard=True,
+        ),
+    )
 
     return ConversationHandler.END
 
@@ -195,7 +240,14 @@ async def getname_handler(
     assert update.message
     assert update.effective_user
 
-    await update.message.reply_text(f"تو {user['nickname']} هستی!")
+    await update.message.reply_text(
+        f"*user['nickname']*",
+        parse_mode=ParseMode.MARKDOWN_V2,
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="/joke")]],
+            one_time_keyboard=True,
+        ),
+    )
 
 
 @authenticated
@@ -211,8 +263,14 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user:
     )
 
     if not joke:
-        await update.message.reply_text("جوکی ندارم که برات بگم :(")
-        return
+        await update.message.reply_text(
+            "دیگه جوکی ندارم که بهت بگم 😁 میتونی به جاش تو یک جوک بهم بگی!",
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[[KeyboardButton(text="/newjoke")]],
+                one_time_keyboard=True,
+            ),
+        )
+        return JOKE_STATES_NOTIF_NEWJOKE
 
     await update.message.reply_text(
         f"{joke['text']}\n\n*{joke['creator_nickname']}*",
@@ -230,6 +288,8 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user:
         ),
     )
 
+    return ConversationHandler.END
+
 
 @authenticated
 @log_activity("newjoke")
@@ -238,7 +298,7 @@ async def newjoke_handler(
 ):
     assert update.message
 
-    await update.message.reply_text("جوکت رو توی یک پیام برام بنویس")
+    await update.message.reply_text("بگو 😁")
 
     return NEWJOKE_STATES_TEXT
 
@@ -292,7 +352,13 @@ async def newjoke_handler_text(
         data=joke,
     )
 
-    await update.message.reply_text("دریافت شد!")
+    await update.message.reply_text(
+        "😂👍",
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="/joke"), KeyboardButton(text="/newjoke")]],
+            one_time_keyboard=True,
+        ),
+    )
 
     return ConversationHandler.END
 
@@ -339,7 +405,11 @@ async def scorejoke_callback_query_handler(
         "score": int(score),
         "created_at": datetime.now(tz=timezone.utc),
     }
-    await db["scores"].insert_one(joke_score)
+    try:
+        await db["scores"].insert_one(joke_score)
+    except DuplicateKeyError:
+        await update.callback_query.answer("قبلا به این جوک رای دادی")
+        return
 
     await update.callback_query.answer(SCORES[score]["notif"])
     assert context.job_queue
@@ -376,7 +446,13 @@ async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if context.user_data is not None:
         context.user_data.clear()
-    await update.message.reply_text("لغو شد.")
+    await update.message.reply_text(
+        "حرفی نیست",
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="/joke")]],
+            one_time_keyboard=True,
+        ),
+    )
 
     return ConversationHandler.END
 
@@ -418,7 +494,7 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
     async for user in inactive_users:
         await context.bot.send_message(
             chat_id=user["_id"],
-            text=f"یه جوک بگم؟",
+            text=f"یک جوک بگم؟",
             parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=ReplyKeyboardMarkup(
                 keyboard=[[KeyboardButton(text="/joke")]], one_time_keyboard=True
