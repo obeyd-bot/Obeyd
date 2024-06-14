@@ -314,7 +314,9 @@ async def most_rated_joke(not_viewed_by_user_id: Optional[int]):
                     {
                         "$match": {
                             "accepted": True,
-                            "_id": {"$nin": [view["joke_id"] for view in views]},
+                            "_id": {
+                                "$nin": [ObjectId(view["joke_id"]) for view in views]
+                            },
                         }
                     },
                     {
