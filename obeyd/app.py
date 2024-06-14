@@ -1,8 +1,10 @@
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 from functools import wraps
 
+from aiogram.types import inline_keyboard_markup
+import pytz
 import sentry_sdk
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError
@@ -57,11 +59,28 @@ SCORES = {
     },
 }
 
+RECURRING_INTERVALS = {
+    "هر روز": {
+        "code": "daily",
+        "text": "هر روز ساعت ۶ عصر",
+    },
+    "هر ساعت": {
+        "code": "daily",
+        "text": "هر روز ساعت ۶ عصر",
+    },
+    "هر دقیقه": {
+        "code": "daily",
+        "text": "هر روز ساعت ۶ عصر",
+    },
+}
+
+
 SHOW_RANDOM_JOKE_PROB = 0.25
 
 START_STATES_NAME = 1
 SETNAME_STATES_NAME = 1
 NEWJOKE_STATES_TEXT = 1
+SETRECURRING_STATES_INTERVAL = 1
 
 REVIEW_JOKES_CHAT_ID = os.environ["REVIEW_JOKES_CHAT_ID"]
 ALERTS_CHAT_ID = os.environ["ALERTS_CHAT_ID"]
@@ -69,6 +88,24 @@ ALERTS_CHAT_ID = os.environ["ALERTS_CHAT_ID"]
 
 async def alert_admin(context: ContextTypes.DEFAULT_TYPE, msg: str):
     await context.bot.send_message(chat_id=ALERTS_CHAT_ID, text=msg)
+
+
+def joke_msg(joke: dict):
+    return {
+        "text": f"{joke['text']}\n\n*{joke['creator_nickname']}*",
+        "parse_mode": ParseMode.MARKDOWN_V2,
+        "reply_markup": InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text=score_data["emoji"],
+                        callback_data=f"scorejoke:{str(joke['_id'])}:{score}",
+                    )
+                    for score, score_data in SCORES.items()
+                ]
+            ]
+        ),
+    }
 
 
 def format_joke(joke: dict):
@@ -256,21 +293,24 @@ async def getname_handler(
     )
 
 
+async def random_joke():
+    try:
+        return (
+            await db["jokes"]
+            .aggregate([{"$match": {"accepted": True}}, {"$sample": {"size": 1}}])
+            .next()
+        )
+    except StopAsyncIteration:
+        return None
+
+
 @authenticated
 @log_activity("joke")
 async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict):
     assert update.message
     assert update.effective_user
 
-    joke = None
-    try:
-        joke = (
-            await db["jokes"]
-            .aggregate([{"$match": {"accepted": True}}, {"$sample": {"size": 1}}])
-            .next()
-        )
-    except StopAsyncIteration:
-        pass
+    joke = await random_joke()
 
     if joke is None:
         await update.message.reply_text(
@@ -283,21 +323,7 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user:
         )
         return
 
-    await update.message.reply_text(
-        f"{joke['text']}\n\n*{joke['creator_nickname']}*",
-        parse_mode=ParseMode.MARKDOWN_V2,
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text=score_data["emoji"],
-                        callback_data=f"scorejoke:{str(joke['_id'])}:{score}",
-                    )
-                    for score, score_data in SCORES.items()
-                ]
-            ]
-        ),
-    )
+    await update.message.reply_text(**joke_msg(joke))
 
     return ConversationHandler.END
 
@@ -517,6 +543,95 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+async def setrecurring_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    assert update.message
+    await update.message.reply_text(
+        text="باشه 😁 چند وقت یک بار جوک بفرستم؟",
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[
+                [
+                    KeyboardButton(text=interval)
+                    for interval in RECURRING_INTERVALS.keys()
+                ]
+            ]
+        ),
+    )
+    return SETRECURRING_STATES_INTERVAL
+
+
+async def setrecurring_handler_interval(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
+    assert update.message
+    assert update.message.text
+    assert update.effective_chat
+    assert update.effective_user
+
+    chat_id = update.effective_chat.id
+    created_by_user_id = update.effective_user.id
+    interval = RECURRING_INTERVALS[update.message.text]
+
+    recurring = {
+        "chat_id": chat_id,
+        "created_by_user_id": created_by_user_id,
+        "interval": interval["code"],
+        "created_at": datetime.now(),
+    }
+    await db["recurrings"].insert_one(recurring)
+
+    schedule_recurring(recurring)
+
+    await update.message.reply_text(
+        text=f"{interval['text']} همینجا جوک میفرستم 😁",
+    )
+
+    return ConversationHandler.END
+
+
+def schedule_recurring(recurring: dict):
+    assert job_queue
+    if recurring["interval"] == "daily":
+        job_queue.run_daily(
+            recurring_joke_callback,
+            data=recurring,
+            time=time(hour=18, tzinfo=pytz.timezone("Asia/Tehran")),
+        )
+    elif recurring["interval"] == "hourly":
+        job_queue.run_repeating(
+            recurring_joke_callback,
+            data=recurring,
+            interval=timedelta(hours=1),
+        )
+    elif recurring["interval"] == "minutely":
+        job_queue.run_repeating(
+            recurring_joke_callback,
+            data=recurring,
+            interval=timedelta(minutes=1),
+        )
+
+
+async def schedule_recurrings(context: ContextTypes.DEFAULT_TYPE):
+    assert job_queue
+
+    async for recurring in db["recurrings"].find():
+        schedule_recurring(recurring)
+
+
+async def recurring_joke_callback(context: ContextTypes.DEFAULT_TYPE):
+    assert context.job
+
+    recurring = context.job.data
+    assert isinstance(recurring, dict)
+
+    joke = await random_joke()
+    assert joke is not None
+
+    await context.bot.send_message(
+        **joke_msg(joke),
+        chat_id=recurring["chat_id"],
+    )
+
+
 if __name__ == "__main__":
     sentry_sdk.init(
         dsn="https://843cb5c0e82dfa5f061f643a1422a9cf@sentry.hamravesh.com/6750",
@@ -567,6 +682,19 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("joke", joke_handler))
     app.add_handler(
         ConversationHandler(
+            entry_points=[CommandHandler("setrecurring", setrecurring_handler)],
+            states={
+                SETRECURRING_STATES_INTERVAL: [
+                    MessageHandler(
+                        filters.TEXT & ~filters.COMMAND, setrecurring_handler_interval
+                    )
+                ]
+            },
+            fallbacks=[CommandHandler("cancel", cancel_handler)],
+        )
+    )
+    app.add_handler(
+        ConversationHandler(
             entry_points=[CommandHandler("newjoke", newjoke_handler)],
             states={
                 NEWJOKE_STATES_TEXT: [
@@ -591,5 +719,7 @@ if __name__ == "__main__":
         callback=notify_inactive_users_callback,
         interval=timedelta(hours=1).total_seconds(),
     )
+
+    job_queue.run_once(schedule_recurrings, when=0)
 
     app.run_polling()
