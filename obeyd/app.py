@@ -307,7 +307,7 @@ async def most_rated_joke(not_viewed_by_user_id: Optional[int]):
     )
 
     try:
-        return (
+        joke_id = (
             await db["jokes"]
             .aggregate(
                 [
@@ -332,7 +332,8 @@ async def most_rated_joke(not_viewed_by_user_id: Optional[int]):
                 ]
             )
             .next()
-        )
+        )["_id"]
+        return await db["jokes"].find_one({"_id": joke_id})
     except StopAsyncIteration:
         return None
 
