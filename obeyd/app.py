@@ -542,6 +542,31 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+async def deleterecurring_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    assert update.message
+    assert update.effective_chat
+
+    chat_id = update.effective_chat.id
+
+    recurring = await db["recurrings"].find_one({"chat_id": chat_id})
+    if recurring is None:
+        await update.message.reply_text(
+            "اصلا قرار نبود جوکی رو هر چند وقت یک بار بفرستم اینجا 🫤"
+        )
+        return
+
+    job_name = f"recurring-{recurring['chat_id']}"
+
+    assert job_queue
+    current_jobs = job_queue.get_jobs_by_name(name=job_name)
+
+    await db["recurrings"].delete_one({"chat_id": chat_id})
+    for job in current_jobs:
+        job.schedule_removal()
+
+    await update.message.reply_text(text="باشه دیگه جوک نمیفرستم 😁")
+
+
 async def setrecurring_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
     await update.message.reply_text(
@@ -703,6 +728,7 @@ if __name__ == "__main__":
     )
     app.add_handler(CommandHandler("getname", getname_handler))
     app.add_handler(CommandHandler("joke", joke_handler))
+    app.add_handler(CommandHandler("deleterecurring", deleterecurring_handler))
     app.add_handler(
         ConversationHandler(
             entry_points=[CommandHandler("setrecurring", setrecurring_handler)],
