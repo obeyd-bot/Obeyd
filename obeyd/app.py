@@ -516,7 +516,7 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
             ),
             InlineQueryResultArticle(
                 id="setrecurring",
-                title="هی جوک بگو!",
+                title="چند وقت یک بار جوک بگو!",
                 input_message_content=InputTextMessageContent(
                     message_text="/setrecurring", parse_mode=ParseMode.MARKDOWN_V2
                 ),
@@ -687,6 +687,14 @@ async def recurring_joke_callback(context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+    assert isinstance(update, Update)
+    assert update.message
+    await update.message.reply_text(
+        "متاسفانه مشکلی پیش اومده. چند دقیقه دیگه دوباره تلاش کن."
+    )
+
+
 if __name__ == "__main__":
     sentry_sdk.init(
         dsn="https://843cb5c0e82dfa5f061f643a1422a9cf@sentry.hamravesh.com/6750",
@@ -769,6 +777,8 @@ if __name__ == "__main__":
         CallbackQueryHandler(reviewjoke_callback_query_handler, pattern="^reviewjoke")
     )
     app.add_handler(InlineQueryHandler(inline_query_handler))
+
+    app.add_error_handler(error_handler)
 
     # jobs
     job_queue.run_repeating(
