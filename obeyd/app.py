@@ -208,7 +208,7 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user:
         return
 
     await update.message.reply_text(
-        f"{joke.text}\n\n*{joke.creator_nickname}*",
+        f"{joke['text']}\n\n*{joke['creator_nickname']}*",
         parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
