@@ -285,7 +285,7 @@ async def getname_handler(
     assert update.effective_user
 
     await update.message.reply_text(
-        f"*user['nickname']*",
+        f"*{user['nickname']}*",
         parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="/joke")]],
