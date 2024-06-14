@@ -356,6 +356,15 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
+    await db["joke_views"].insert_one(
+        {
+            "user_id": update.effective_user.id,
+            "joke_id": str(joke["_id"]),
+            "score": None,
+            "viewed_at": datetime.now(tz=timezone.utc),
+            "scored_at": None,
+        }
+    )
     await update.message.reply_text(**joke_msg(joke))
 
     return ConversationHandler.END
@@ -475,11 +484,18 @@ async def scorejoke_callback_query_handler(
         "score": int(score),
         "created_at": datetime.now(tz=timezone.utc),
     }
-    try:
-        await db["scores"].insert_one(joke_score)
-    except DuplicateKeyError:
+
+    view = await db["joke_views"].find_one(
+        {"user_id": update.effective_user.id, "joke_id": joke_id}
+    )
+    if view is not None and view["score"] is not None:
         await update.callback_query.answer("قبلا به این جوک رای دادی")
         return
+
+    await db["joke_views"].update_one(
+        {"user_id": update.effective_user.id, "joke_id": joke_id},
+        {"score": int(score), "scored_at": datetime.now(tz=timezone.utc)},
+    )
 
     await update.callback_query.answer(SCORES[score]["notif"])
     assert context.job_queue
