@@ -215,7 +215,7 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user:
                 [
                     InlineKeyboardButton(
                         text=score_data["emoji"],
-                        callback_data=f"scorejoke:{joke.id}:{score}",
+                        callback_data=f"scorejoke:{joke['_id']}:{score}",
                     )
                     for score, score_data in SCORES.items()
                 ]
