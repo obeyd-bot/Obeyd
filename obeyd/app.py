@@ -764,18 +764,18 @@ if __name__ == "__main__":
     )
     app.add_handler(
         ConversationHandler(
-            entry_points=[CommandHandler("setname", setname_handler)],
+            entry_points=[CommandHandler("setname", setname_handler)],  # type: ignore
             states={
                 SETNAME_STATES_NAME: [
                     MessageHandler(
-                        filters.TEXT & ~filters.COMMAND, setname_handler_name
+                        filters.TEXT & ~filters.COMMAND, setname_handler_name  # type: ignore
                     )
                 ]
-            },
+            },  # type: ignore
             fallbacks=[CommandHandler("cancel", cancel_handler)],
         )
     )
-    app.add_handler(CommandHandler("getname", getname_handler))
+    app.add_handler(CommandHandler("getname", getname_handler))  # type: ignore
     app.add_handler(CommandHandler("joke", joke_handler))
     app.add_handler(CommandHandler("deleterecurring", deleterecurring_handler))
     app.add_handler(
@@ -793,14 +793,14 @@ if __name__ == "__main__":
     )
     app.add_handler(
         ConversationHandler(
-            entry_points=[CommandHandler("newjoke", newjoke_handler)],
+            entry_points=[CommandHandler("newjoke", newjoke_handler)],  # type: ignore
             states={
                 NEWJOKE_STATES_TEXT: [
                     MessageHandler(
-                        filters.TEXT & ~filters.COMMAND, newjoke_handler_text
+                        filters.TEXT & ~filters.COMMAND, newjoke_handler_text  # type: ignore
                     )
                 ]
-            },
+            },  # type: ignore
             fallbacks=[CommandHandler("cancel", cancel_handler)],
         )
     )
