@@ -62,17 +62,13 @@ SCORES = {
 }
 
 RECURRING_INTERVALS = {
-    "هر دقیقه": {
-        "code": "minutely",
-        "text": "هر دقیقه",
-    },
-    "هر ساعت": {
-        "code": "hourly",
-        "text": "هر ساعت",
-    },
     "هر روز": {
         "code": "daily",
         "text": "هر روز ساعت ۶ عصر",
+    },
+    "هر هفته": {
+        "code": "weekly",
+        "text": "هر هفته پنج شنبه ساعت ۶ عصر",
     },
 }
 
@@ -643,18 +639,12 @@ def schedule_recurring(recurring: dict):
             time=time(hour=18, tzinfo=pytz.timezone("Asia/Tehran")),
             name=job_name,
         )
-    elif recurring["interval"] == "hourly":
-        job_queue.run_repeating(
+    elif recurring["interval"] == "weekly":
+        job_queue.run_daily(
             recurring_joke_callback,
             data=recurring,
-            interval=timedelta(hours=1),
-            name=job_name,
-        )
-    elif recurring["interval"] == "minutely":
-        job_queue.run_repeating(
-            recurring_joke_callback,
-            data=recurring,
-            interval=timedelta(minutes=1),
+            time=time(hour=18, tzinfo=pytz.timezone("Asia/Tehran")),
+            days=(4,),
             name=job_name,
         )
 
