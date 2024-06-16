@@ -6,4 +6,4 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
     ports:
-      - "5432:5432"
+      - "27017:27017"
