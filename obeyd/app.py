@@ -183,7 +183,7 @@ async def send_joke_to_admin(joke: dict, context: ContextTypes.DEFAULT_TYPE):
         )
     elif "voice_file_id" in joke:
         await context.bot.send_voice(
-            voice=Path(f"{VOICES_BASE_DIR}/voices/{joke['voice_file_id']}.bin"),
+            voice=Path(f"{VOICES_BASE_DIR}/{joke['voice_file_id']}.bin"),
             caption=f"*{joke['creator_nickname']}*",
             **common,
         )
