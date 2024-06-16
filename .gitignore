@@ -2,3 +2,4 @@ venv
 .env
 db.sqlite
 __pycache__
+files/voices

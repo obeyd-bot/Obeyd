@@ -2,9 +2,9 @@ import asyncio
 import os
 from motor.motor_asyncio import AsyncIOMotorClient
 
-
-client = AsyncIOMotorClient(os.environ["MONGODB_URI"])
-db = client[os.environ["MONGODB_DB"]]
+db_uri = os.environ["MONGODB_URI"]
+client = AsyncIOMotorClient(db_uri.rsplit("/", 1)[0])
+db = client[db_uri.rsplit("/", 1)[1]]
 
 
 async def create_indexes():

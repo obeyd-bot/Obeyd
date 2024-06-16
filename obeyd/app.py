@@ -1,11 +1,10 @@
-import html
-import json
 import logging
 import os
 from datetime import datetime, time, timedelta, timezone
 from functools import wraps
-import traceback
+from pathlib import Path
 from typing import Optional
+from uuid import uuid4
 
 import pytz
 import sentry_sdk
@@ -14,8 +13,6 @@ from pymongo.errors import DuplicateKeyError
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    InlineQueryResultArticle,
-    InputTextMessageContent,
     KeyboardButton,
     ReplyKeyboardMarkup,
     Update,
@@ -27,7 +24,6 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
     ConversationHandler,
-    InlineQueryHandler,
     MessageHandler,
     filters,
 )
@@ -79,17 +75,19 @@ SETNAME_STATES_NAME = 1
 NEWJOKE_STATES_TEXT = 1
 SETRECURRING_STATES_INTERVAL = 1
 
-REVIEW_JOKES_CHAT_ID = os.environ["REVIEW_JOKES_CHAT_ID"]
-ALERTS_CHAT_ID = os.environ["ALERTS_CHAT_ID"]
+VOICES_BASE_DIR = os.environ.get("OBEYD_VOICES_BASE_DIR", "files/voices")
+
+REVIEW_JOKES_CHAT_ID = os.environ["OBEYD_REVIEW_JOKES_CHAT_ID"]
 
 
-async def alert_admin(context: ContextTypes.DEFAULT_TYPE, msg: str):
-    await context.bot.send_message(chat_id=ALERTS_CHAT_ID, text=msg)
+def format_text_joke(joke: dict):
+    return f"{joke['text']}\n\n*{joke['creator_nickname']}*"
 
 
-def joke_msg(joke: dict):
-    return {
-        "text": f"{joke['text']}\n\n*{joke['creator_nickname']}*",
+async def send_joke_to_user(joke: dict, update: Update):
+    assert update.message
+
+    common = {
         "parse_mode": ParseMode.MARKDOWN_V2,
         "reply_markup": InlineKeyboardMarkup(
             inline_keyboard=[
@@ -104,9 +102,95 @@ def joke_msg(joke: dict):
         ),
     }
 
+    if "text" in joke:
+        await update.message.reply_text(
+            text=format_text_joke(joke),
+            **common,
+        )
+    elif "voice_file_id" in joke:
+        await update.message.reply_voice(
+            voice=Path(f"{VOICES_BASE_DIR}/{joke['voice_file_id']}.bin"),
+            caption=f"*{joke['creator_nickname']}*",
+            **common,
+        )
+    else:
+        raise Exception(
+            "could not send joke to the user, expected 'text' or 'voice_file_id' to be present in the joke"
+        )
 
-def format_joke(joke: dict):
-    return f"{joke['text']}\n\n*{joke['creator_nickname']}*"
+
+async def send_joke_to_user_by_context(
+    joke: dict, chat_id: str, context: ContextTypes.DEFAULT_TYPE
+):
+    common = {
+        "parse_mode": ParseMode.MARKDOWN_V2,
+        "reply_markup": InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text=score_data["emoji"],
+                        callback_data=f"scorejoke:{str(joke['_id'])}:{score}",
+                    )
+                    for score, score_data in SCORES.items()
+                ]
+            ]
+        ),
+    }
+
+    if "text" in joke:
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=format_text_joke(joke),
+            **common,
+        )
+    elif "voice_file_id" in joke:
+        await context.bot.send_voice(
+            chat_id=chat_id,
+            voice=Path(f"{VOICES_BASE_DIR}/{joke['voice_file_id']}.bin"),
+            caption=f"*{joke['creator_nickname']}*",
+            **common,
+        )
+    else:
+        raise Exception(
+            "could not send joke to the user, expected 'text' or 'voice_file_id' to be present in the joke"
+        )
+
+
+async def send_joke_to_admin(joke: dict, context: ContextTypes.DEFAULT_TYPE):
+    common = {
+        "chat_id": REVIEW_JOKES_CHAT_ID,
+        "parse_mode": ParseMode.MARKDOWN_V2,
+        "reply_markup": InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="رد",
+                        callback_data=f"reviewjoke:{joke['_id']}:reject",
+                    ),
+                    InlineKeyboardButton(
+                        text="تایید",
+                        callback_data=f"reviewjoke:{joke['_id']}:accept",
+                    ),
+                ]
+            ]
+        ),
+    }
+
+    if "text" in joke:
+        await context.bot.send_message(
+            text=format_text_joke(joke),
+            **common,
+        )
+    elif "voice_file_id" in joke:
+        await context.bot.send_voice(
+            voice=Path(f"{VOICES_BASE_DIR}/voices/{joke['voice_file_id']}.bin"),
+            caption=f"*{joke['creator_nickname']}*",
+            **common,
+        )
+    else:
+        raise Exception(
+            "could not send joke to the admins, expected 'text' or 'voice_file_id' to be present in the joke"
+        )
 
 
 def log_activity(kind):
@@ -367,7 +451,8 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "scored_at": None,
         }
     )
-    await update.message.reply_text(**joke_msg(joke))
+
+    await send_joke_to_user(joke, update)
 
     return ConversationHandler.END
 
@@ -385,15 +470,23 @@ async def newjoke_handler(
 
 
 @authenticated
-async def newjoke_handler_text(
+async def newjoke_handler_joke(
     update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict
 ):
     assert update.message
     assert update.effective_user
     assert context.job_queue
 
+    if update.message.voice is not None:
+        file = await update.message.voice.get_file()
+        file_id = str(uuid4())
+        await file.download_to_drive(custom_path=f"{VOICES_BASE_DIR}/{file_id}.bin")
+        joke = {"voice_file_id": file_id}
+    else:
+        joke = {"text": update.message.text}
+
     joke = {
-        "text": update.message.text,
+        **joke,
         "creator_id": user["user_id"],
         "creator_nickname": user["nickname"],
         "created_at": datetime.now(tz=timezone.utc),
@@ -424,25 +517,7 @@ async def newjoke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE):
 
     joke = context.job.data
 
-    await context.bot.send_message(
-        chat_id=REVIEW_JOKES_CHAT_ID,
-        text=f"جوک جدیدی ارسال شده است:\n\n{format_joke(joke)}",
-        parse_mode=ParseMode.MARKDOWN_V2,
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="رد",
-                        callback_data=f"reviewjoke:{joke['_id']}:reject",
-                    ),
-                    InlineKeyboardButton(
-                        text="تایید",
-                        callback_data=f"reviewjoke:{joke['_id']}:accept",
-                    ),
-                ]
-            ]
-        ),
-    )
+    await send_joke_to_admin(joke, context)
 
 
 async def reviewjoke_callback_query_handler(
@@ -544,30 +619,6 @@ async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     return ConversationHandler.END
-
-
-async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    assert update.inline_query
-
-    joke = (
-        await db["jokes"]
-        .aggregate([{"$match": {"accepted": True}}, {"$sample": {"size": 1}}])
-        .next()
-    )
-    assert joke is not None
-
-    await update.inline_query.answer(
-        results=[
-            InlineQueryResultArticle(
-                id="joke",
-                title="جوک بگو!",
-                input_message_content=InputTextMessageContent(
-                    message_text=format_joke(joke), parse_mode=ParseMode.MARKDOWN_V2
-                ),
-            ),
-        ],
-        cache_time=0,
-    )
 
 
 async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
@@ -723,18 +774,16 @@ async def recurring_joke_callback(context: ContextTypes.DEFAULT_TYPE):
     joke = await random_joke()
     assert joke is not None
 
-    await context.bot.send_message(
-        **joke_msg(joke),
-        chat_id=recurring["chat_id"],
-    )
+    await send_joke_to_user_by_context(joke, recurring["chat_id"], context)
 
 
 if __name__ == "__main__":
-    sentry_sdk.init(
-        dsn="https://843cb5c0e82dfa5f061f643a1422a9cf@sentry.hamravesh.com/6750",
-        traces_sample_rate=1.0,
-        profiles_sample_rate=1.0,
-    )
+    if os.environ.get("SENTRY_ENABLED", "False") == "True":
+        sentry_sdk.init(
+            dsn="https://843cb5c0e82dfa5f061f643a1422a9cf@sentry.hamravesh.com/6750",
+            traces_sample_rate=1.0,
+            profiles_sample_rate=1.0,
+        )
 
     logging.basicConfig(
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -797,7 +846,7 @@ if __name__ == "__main__":
             states={
                 NEWJOKE_STATES_TEXT: [
                     MessageHandler(
-                        filters.TEXT & ~filters.COMMAND, newjoke_handler_text  # type: ignore
+                        (filters.TEXT | filters.VOICE) & ~filters.COMMAND, newjoke_handler_joke  # type: ignore
                     )
                 ]
             },  # type: ignore
@@ -810,7 +859,6 @@ if __name__ == "__main__":
     app.add_handler(
         CallbackQueryHandler(reviewjoke_callback_query_handler, pattern="^reviewjoke")
     )
-    app.add_handler(InlineQueryHandler(inline_query_handler))
 
     # jobs
     job_queue.run_repeating(
