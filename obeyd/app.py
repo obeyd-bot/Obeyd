@@ -1,10 +1,9 @@
 import logging
 import os
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
 
-import pytz
 import sentry_sdk
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError
@@ -36,12 +35,18 @@ from obeyd.config import (
 from obeyd.db import db
 from obeyd.jokes import most_rated_joke, random_joke
 from obeyd.middlewares import authenticated, log_activity, not_authenticated
+from obeyd.recurrings import (
+    SETRECURRING_STATES_INTERVAL,
+    deleterecurring_handler,
+    schedule_recurrings,
+    setrecurring_handler,
+    setrecurring_handler_interval,
+)
 
 
 START_STATES_NAME = 1
 SETNAME_STATES_NAME = 1
 NEWJOKE_STATES_TEXT = 1
-SETRECURRING_STATES_INTERVAL = 1
 
 
 def format_text_joke(joke: dict):
@@ -501,147 +506,6 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
                 resize_keyboard=True,
             ),
         )
-
-
-async def deleterecurring_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    assert update.message
-    assert update.effective_chat
-
-    chat_id = update.effective_chat.id
-
-    recurring = await db["recurrings"].find_one({"chat_id": chat_id})
-    if recurring is None:
-        await update.message.reply_text(
-            "اصلا قرار نبود جوکی رو هر چند وقت یک بار بفرستم اینجا 🫤"
-        )
-        return
-
-    job_name = f"recurring-{recurring['chat_id']}"
-
-    assert job_queue
-    current_jobs = job_queue.get_jobs_by_name(name=job_name)
-
-    await db["recurrings"].delete_one({"chat_id": chat_id})
-    for job in current_jobs:
-        job.schedule_removal()
-
-    await update.message.reply_text(text="باشه دیگه جوک نمیفرستم 😁")
-
-
-async def setrecurring_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    assert update.message
-    await update.message.reply_text(
-        text="باشه 😁 چند وقت یک بار جوک بفرستم؟",
-        reply_markup=ReplyKeyboardMarkup(
-            keyboard=[
-                [
-                    KeyboardButton(text=interval)
-                    for interval in RECURRING_INTERVALS.keys()
-                ],
-                [KeyboardButton(text="/cancel")],
-            ],
-            one_time_keyboard=True,
-            resize_keyboard=True,
-        ),
-    )
-    return SETRECURRING_STATES_INTERVAL
-
-
-async def setrecurring_handler_interval(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-):
-    assert update.message
-    assert update.message.text
-    assert update.effective_chat
-    assert update.effective_user
-
-    chat_id = update.effective_chat.id
-    created_by_user_id = update.effective_user.id
-    interval = RECURRING_INTERVALS.get(update.message.text.strip())
-
-    if interval is None:
-        await update.message.reply_text(
-            "هان؟ متوجه نشدم 🤔",
-            reply_markup=ReplyKeyboardMarkup(
-                keyboard=[[KeyboardButton(text="/cancel")]],
-                one_time_keyboard=True,
-                resize_keyboard=True,
-            ),
-        )
-        return SETRECURRING_STATES_INTERVAL
-
-    recurring = {
-        "chat_id": chat_id,
-        "created_by_user_id": created_by_user_id,
-        "interval": interval["code"],
-        "created_at": datetime.now(tz=timezone.utc),
-    }
-    await db["recurrings"].update_one(
-        {"chat_id": chat_id},
-        {
-            "$set": {
-                "created_by_user_id": recurring["created_by_user_id"],
-                "interval": recurring["interval"],
-            },
-            "$setOnInsert": {
-                "created_at": recurring["created_at"],
-            },
-        },
-        upsert=True,
-    )
-
-    schedule_recurring(recurring)
-
-    await update.message.reply_text(
-        text=f"{interval['text']} همینجا جوک میفرستم 😁",
-    )
-
-    return ConversationHandler.END
-
-
-def schedule_recurring(recurring: dict):
-    assert job_queue
-
-    job_name = f"recurring-{recurring['chat_id']}"
-
-    current_jobs = job_queue.get_jobs_by_name(name=job_name)
-    for job in current_jobs:
-        job.schedule_removal()
-
-    if recurring["interval"] == "daily":
-        job_queue.run_daily(
-            recurring_joke_callback,
-            data=recurring,
-            time=time(hour=18, tzinfo=pytz.timezone("Asia/Tehran")),
-            name=job_name,
-        )
-    elif recurring["interval"] == "weekly":
-        job_queue.run_daily(
-            recurring_joke_callback,
-            data=recurring,
-            time=time(hour=18, tzinfo=pytz.timezone("Asia/Tehran")),
-            days=(4,),
-            name=job_name,
-        )
-
-
-async def schedule_recurrings(context: ContextTypes.DEFAULT_TYPE):
-    assert job_queue
-
-    async for recurring in db["recurrings"].find():
-        schedule_recurring(recurring)
-
-
-async def recurring_joke_callback(context: ContextTypes.DEFAULT_TYPE):
-    assert context.job
-
-    recurring = context.job.data
-    assert isinstance(recurring, dict)
-
-    joke = await random_joke()
-    assert joke is not None
-
-    await send_joke_to_user(joke, recurring["chat_id"], context)
 
 
 if __name__ == "__main__":
