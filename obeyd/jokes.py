@@ -96,7 +96,7 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await db["joke_views"].insert_one(
         {
             "user_id": update.effective_user.id,
-            "joke_id": str(joke["_id"]),
+            "joke_id": joke["_id"],
             "score": None,
             "viewed_at": datetime.now(tz=timezone.utc),
             "scored_at": None,
