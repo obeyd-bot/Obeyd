@@ -27,58 +27,21 @@ from telegram.ext import (
     filters,
 )
 
+from obeyd.config import (
+    RECURRING_INTERVALS,
+    REVIEW_JOKES_CHAT_ID,
+    SCORES,
+    VOICES_BASE_DIR,
+)
 from obeyd.db import db
 from obeyd.jokes import most_rated_joke, random_joke
 from obeyd.middlewares import authenticated, log_activity, not_authenticated
-
-SCORES = {
-    "1": {
-        "emoji": "💩",
-        "notif": "💩💩💩",
-        "score_notif": "{s} با جوکت اصلا حال نکرد 💩💩💩",
-    },
-    "2": {
-        "emoji": "😐",
-        "notif": "😐😐😐",
-        "score_notif": "{s} با جوکت حال نکرد 😐😐😐",
-    },
-    "3": {
-        "emoji": "🙂",
-        "notif": "🙂🙂🙂",
-        "score_notif": "{s} فکر میکنه جوکت بد هم نبوده 🙂🙂🙂",
-    },
-    "4": {
-        "emoji": "😁",
-        "notif": "😁😁😁",
-        "score_notif": "{s} با جوکت حال کرد 😁😁😁",
-    },
-    "5": {
-        "emoji": "😂",
-        "notif": "😂😂😂",
-        "score_notif": "{s} با جوکت خیلی حال کرد 😂😂😂",
-    },
-}
-
-RECURRING_INTERVALS = {
-    "هر روز": {
-        "code": "daily",
-        "text": "هر روز ساعت ۶ عصر",
-    },
-    "هر هفته": {
-        "code": "weekly",
-        "text": "هر هفته پنج شنبه ساعت ۶ عصر",
-    },
-}
 
 
 START_STATES_NAME = 1
 SETNAME_STATES_NAME = 1
 NEWJOKE_STATES_TEXT = 1
 SETRECURRING_STATES_INTERVAL = 1
-
-VOICES_BASE_DIR = os.environ.get("OBEYD_VOICES_BASE_DIR", "files/voices")
-
-REVIEW_JOKES_CHAT_ID = os.environ["OBEYD_REVIEW_JOKES_CHAT_ID"]
 
 
 def format_text_joke(joke: dict):
