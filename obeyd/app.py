@@ -1,13 +1,9 @@
 import logging
 import os
 from datetime import datetime, timedelta, timezone
-from uuid import uuid4
 
 import sentry_sdk
-from bson import ObjectId
 from telegram import (
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardMarkup,
     Update,
@@ -24,10 +20,9 @@ from telegram.ext import (
     filters,
 )
 
-from obeyd.config import SCORES, VOICES_BASE_DIR
 from obeyd.db import db
-from obeyd.jokes import most_rated_joke, send_joke, send_joke_to_user
-from obeyd.middlewares import authenticated, log_activity
+from obeyd.jokes import NEWJOKE_STATES_TEXT, joke_handler
+from obeyd.middlewares import log_activity
 from obeyd.recurrings import (
     SETRECURRING_STATES_INTERVAL,
     deleterecurring_handler,
@@ -35,10 +30,7 @@ from obeyd.recurrings import (
     setrecurring_handler,
     setrecurring_handler_interval,
 )
-from obeyd.review import (
-    newjoke_callback_notify_admin,
-    reviewjoke_callback_query_handler,
-)
+from obeyd.review import reviewjoke_callback_query_handler
 from obeyd.scores import scorejoke_callback_query_handler
 from obeyd.users import (
     SETNAME_STATES_NAME,
@@ -46,107 +38,6 @@ from obeyd.users import (
     start_handler,
     start_handler_name,
 )
-
-NEWJOKE_STATES_TEXT = 1
-
-
-@log_activity("joke")
-async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    assert update.message
-    assert update.effective_user
-    assert update.effective_chat
-
-    joke = await most_rated_joke(not_viewed_by_user_id=update.effective_user.id)
-
-    if joke is None:
-        await update.message.reply_text(
-            "دیگه جوکی ندارم که بهت بگم 😁 میتونی به جاش تو یک جوک بهم بگی!",
-            reply_markup=ReplyKeyboardMarkup(
-                keyboard=[[KeyboardButton(text="/newjoke")]],
-                one_time_keyboard=True,
-                resize_keyboard=True,
-            ),
-        )
-        return
-
-    await db["joke_views"].insert_one(
-        {
-            "user_id": update.effective_user.id,
-            "joke_id": str(joke["_id"]),
-            "score": None,
-            "viewed_at": datetime.now(tz=timezone.utc),
-            "scored_at": None,
-        }
-    )
-
-    chat_id = update.effective_chat.id
-    await send_joke_to_user(joke, chat_id, context)
-
-    return ConversationHandler.END
-
-
-@authenticated
-@log_activity("newjoke")
-async def newjoke_handler(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict
-):
-    assert update.message
-
-    await update.message.reply_text(
-        text="بگو 😁",
-        reply_markup=ReplyKeyboardMarkup(
-            keyboard=[[KeyboardButton(text="/cancel")]],
-            one_time_keyboard=True,
-            resize_keyboard=True,
-        ),
-    )
-
-    return NEWJOKE_STATES_TEXT
-
-
-@authenticated
-async def newjoke_handler_joke(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict
-):
-    assert update.message
-    assert update.effective_user
-    assert context.job_queue
-
-    if update.message.voice is not None:
-        file = await update.message.voice.get_file()
-        file_id = str(uuid4())
-        await file.download_to_drive(custom_path=f"{VOICES_BASE_DIR}/{file_id}.bin")
-        joke = {"voice_file_id": file_id}
-    else:
-        joke = {"text": update.message.text}
-
-    joke = {
-        **joke,
-        "creator_id": user["user_id"],
-        "creator_nickname": user["nickname"],
-        "created_at": datetime.now(tz=timezone.utc),
-    }
-    await db["jokes"].insert_one(joke)
-
-    context.job_queue.run_once(
-        callback=newjoke_callback_notify_admin,
-        when=0,
-        data=joke,
-    )
-
-    await update.message.reply_text(
-        "😂👍",
-        reply_markup=ReplyKeyboardMarkup(
-            keyboard=[
-                [KeyboardButton(text="/joke")],
-                [KeyboardButton(text="/newjoke")],
-            ],
-            one_time_keyboard=True,
-            resize_keyboard=True,
-        ),
-    )
-
-    return ConversationHandler.END
 
 
 @log_activity("cancel")
