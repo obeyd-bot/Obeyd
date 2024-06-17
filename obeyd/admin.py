@@ -60,4 +60,4 @@ if __name__ == "__main__":
     admin.add_view(UserView(db["users"]))
     admin.add_view(JokeView(db["jokes"]))
 
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
