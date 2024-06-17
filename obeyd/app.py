@@ -3,7 +3,15 @@ import os
 from datetime import datetime, timedelta, timezone
 
 import sentry_sdk
-from telegram import KeyboardButton, ReplyKeyboardMarkup, Update
+from telegram import (
+    InlineQueryResult,
+    InlineQueryResultArticle,
+    InputMessageContent,
+    InputTextMessageContent,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+    Update,
+)
 from telegram.constants import ParseMode
 from telegram.ext import (
     ApplicationBuilder,
@@ -12,6 +20,7 @@ from telegram.ext import (
     ContextTypes,
     ConversationHandler,
     Defaults,
+    InlineQueryHandler,
     MessageHandler,
     filters,
 )
@@ -85,6 +94,23 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
                 resize_keyboard=True,
             ),
         )
+
+
+async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    assert update.inline_query
+
+    await update.inline_query.answer(
+        results=[
+            InlineQueryResultArticle(
+                id="joke",
+                title="جوک بگو!",
+                input_message_content=InputTextMessageContent(
+                    "فعلا نمیتونم جوک بگم 😿"
+                ),
+            )
+        ],
+        cache_time=10,
+    )
 
 
 if __name__ == "__main__":
@@ -172,6 +198,7 @@ if __name__ == "__main__":
     app.add_handler(
         CallbackQueryHandler(reviewjoke_callback_query_handler, pattern="^reviewjoke")
     )
+    app.add_handler(InlineQueryHandler(inline_query_handler))
 
     # jobs
     job_queue.run_repeating(
