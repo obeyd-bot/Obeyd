@@ -1,0 +1,63 @@
+import os
+
+from flask import Flask
+from flask_admin import Admin
+from flask_admin.contrib.pymongo import ModelView
+from pymongo import MongoClient
+from wtforms import fields, form
+
+db_uri = os.environ["MONGODB_URI"]
+client = MongoClient(db_uri.rsplit("/", 1)[0])
+db = client[db_uri.rsplit("/", 1)[1]]
+
+
+app = Flask(__name__)
+app.config["SECRET_KEY"] = os.environ["FLASK_SECRET_KEY"]
+
+
+class UserForm(form.Form):
+    user_id = fields.StringField()
+    user_name = fields.StringField()
+    user_fullname = fields.StringField()
+    nickname = fields.StringField()
+    joined_at = fields.DateTimeField()
+
+
+class UserView(ModelView):
+    column_list = (
+        "user_id",
+        "user_name",
+        "user_fullname",
+        "nickname",
+        "joined_at",
+    )
+    form = UserForm
+
+
+class JokeForm(form.Form):
+    kind = fields.StringField()
+    text = fields.StringField()
+    voice_file_id = fields.StringField()
+    accepted = fields.BooleanField()
+    creator_nickname = fields.StringField()
+
+
+class JokeView(ModelView):
+    column_list = (
+        "kind",
+        "text",
+        "voice_file_id",
+        "accepted",
+        "creator_id",
+        "creator_nickname",
+        "created_at",
+    )
+    form = JokeForm
+
+
+if __name__ == "__main__":
+    admin = Admin(app, url="/")
+    admin.add_view(UserView(db["users"]))
+    admin.add_view(JokeView(db["jokes"]))
+
+    app.run(debug=True)
