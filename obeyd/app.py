@@ -21,7 +21,11 @@ from telegram.ext import (
 )
 
 from obeyd.db import db
-from obeyd.jokes import NEWJOKE_STATES_TEXT, joke_handler
+from obeyd.jokes import (
+    NEWJOKE_STATES_TEXT,
+    joke_handler,
+    reviewjoke_callback_query_handler,
+)
 from obeyd.middlewares import log_activity
 from obeyd.recurrings import (
     SETRECURRING_STATES_INTERVAL,
@@ -30,7 +34,6 @@ from obeyd.recurrings import (
     setrecurring_handler,
     setrecurring_handler_interval,
 )
-from obeyd.review import reviewjoke_callback_query_handler
 from obeyd.scores import scorejoke_callback_query_handler
 from obeyd.users import (
     SETNAME_STATES_NAME,
