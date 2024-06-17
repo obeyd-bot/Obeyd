@@ -37,6 +37,8 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await db["users"].insert_one(
             {
                 "user_id": update.effective_user.id,
+                "user_name": update.effective_user.username,
+                "user_fullname": update.effective_user.full_name,
                 "nickname": update.message.text,
                 "joined_at": datetime.now(tz=timezone.utc),
             }
