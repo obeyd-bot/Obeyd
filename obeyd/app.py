@@ -9,7 +9,6 @@ from telegram.constants import ParseMode
 from telegram.ext import (
     ApplicationBuilder,
     CallbackQueryHandler,
-    ChosenInlineResultHandler,
     CommandHandler,
     ContextTypes,
     ConversationHandler,
