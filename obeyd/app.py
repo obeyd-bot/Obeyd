@@ -3,11 +3,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 import sentry_sdk
-from telegram import (
-    KeyboardButton,
-    ReplyKeyboardMarkup,
-    Update,
-)
+from telegram import KeyboardButton, ReplyKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.ext import (
     ApplicationBuilder,
@@ -24,6 +20,8 @@ from obeyd.db import db
 from obeyd.jokes import (
     NEWJOKE_STATES_TEXT,
     joke_handler,
+    newjoke_handler,
+    newjoke_handler_joke,
     reviewjoke_callback_query_handler,
 )
 from obeyd.middlewares import log_activity
@@ -38,6 +36,9 @@ from obeyd.scores import scorejoke_callback_query_handler
 from obeyd.users import (
     SETNAME_STATES_NAME,
     START_STATES_NAME,
+    getname_handler,
+    setname_handler,
+    setname_handler_name,
     start_handler,
     start_handler_name,
 )

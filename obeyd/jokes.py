@@ -82,7 +82,7 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if joke is None:
         await update.message.reply_text(
-            "دیگه جوکی ندارم که بهت بگم 😁 میتونی به جاش تو یک جوک بهم بگی!",
+            "دیگه جوکی ندارم که بهت بگم 😁 میتونی به جاش تو یک جوک بهم بگی",
             reply_markup=ReplyKeyboardMarkup(
                 keyboard=[[KeyboardButton(text="/newjoke")]],
                 one_time_keyboard=True,
