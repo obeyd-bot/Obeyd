@@ -115,7 +115,7 @@ async def send_joke_to_user(joke: dict, update: Update):
         )
     else:
         raise Exception(
-            "could not send joke to the user, expected 'text' or 'voice_file_id' to be present in the joke"
+            "expected 'text' or 'voice_file_id' to be present in the joke"
         )
 
 
@@ -152,7 +152,7 @@ async def send_joke_to_user_by_context(
         )
     else:
         raise Exception(
-            "could not send joke to the user, expected 'text' or 'voice_file_id' to be present in the joke"
+            "expected 'text' or 'voice_file_id' to be present in the joke"
         )
 
 
@@ -189,8 +189,48 @@ async def send_joke_to_admin(joke: dict, context: ContextTypes.DEFAULT_TYPE):
         )
     else:
         raise Exception(
-            "could not send joke to the admins, expected 'text' or 'voice_file_id' to be present in the joke"
+            "expected 'text' or 'voice_file_id' to be present in the joke"
         )
+
+
+async def update_joke_sent_to_admin(joke: dict, update: Update, accepted: bool):
+    assert update.callback_query
+    assert update.effective_user
+
+    common = {
+        "parse_mode": ParseMode.MARKDOWN_V2,
+        "reply_markup": InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="رد",
+                        callback_data=f"reviewjoke:{joke['_id']}:reject",
+                    ),
+                    InlineKeyboardButton(
+                        text="تایید",
+                        callback_data=f"reviewjoke:{joke['_id']}:accept",
+                    ),
+                ]
+            ]
+        ),
+    }
+
+    if accepted:
+        info_msg = f"تایید شده توسط *{update.effective_user.full_name}*"
+    else:
+        info_msg = f"رد شده توسط *{update.effective_user.full_name}*"
+
+    if "text" in joke:
+        await update.callback_query.edit_message_text(
+            text=f"{format_text_joke(joke)}\n\n{info_msg}",
+            **common,
+        )
+    elif "voice_file_id" in joke:
+        await update.callback_query.edit_message_caption(
+            caption=f"*{joke['creator_nickname']}*\n\n{info_msg}", **common
+        )
+    else:
+        raise Exception("expected 'text' or 'voice_file_id' to be present in the joke")
 
 
 def log_activity(kind):
@@ -524,6 +564,7 @@ async def reviewjoke_callback_query_handler(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
     assert update.callback_query
+    assert update.effective_user
     assert isinstance(update.callback_query.data, str)
 
     _, joke_id, action = tuple(update.callback_query.data.split(":"))
@@ -539,10 +580,14 @@ async def reviewjoke_callback_query_handler(
         {"_id": ObjectId(joke_id)}, {"$set": {"accepted": accepted}}
     )
 
+    joke = await db["jokes"].find_one({"_id": ObjectId(joke_id)})
+    assert joke is not None
+
     if accepted:
         await update.callback_query.answer("تایید شد")
     else:
         await update.callback_query.answer("رد شد")
+    await update_joke_sent_to_admin(joke, update, accepted=accepted)
 
 
 @log_activity("scorejoke")
