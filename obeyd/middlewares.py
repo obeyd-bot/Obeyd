@@ -39,7 +39,7 @@ def not_authenticated(f):
         if user is not None:
             if update.message:
                 await update.message.reply_text(
-                    f"{user['nickname']}! ما قبلا با هم آشنا شدیم! برای اینکه برات جوک بفرستم از دستور /joke استفاده کن.",
+                    f"ما قبلا با هم آشنا شدیم {user['nickname']} 😉 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن",
                     reply_markup=ReplyKeyboardMarkup(
                         keyboard=[[KeyboardButton(text="/joke")]],
                         one_time_keyboard=True,
@@ -63,7 +63,7 @@ def authenticated(f):
         if user is None:
             if update.message:
                 await update.message.reply_text(
-                    "قبل از هر چیز، از دستور /start استفاده کن تا با هم آشنا بشیم.",
+                    "قبل از هر چیز از دستور /start استفاده کن تا با هم آشنا بشیم 😉",
                     reply_markup=ReplyKeyboardMarkup(
                         keyboard=[[KeyboardButton(text="/start")]],
                         one_time_keyboard=True,
