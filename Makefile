@@ -15,6 +15,7 @@ push-master:
 	git checkout master
 	git rebase devel
 	git push origin master
+	git checkout devel
 
 clean:
 	find . -type d -name "__pycache__" | xargs rm -r
