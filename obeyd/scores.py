@@ -35,7 +35,7 @@ async def scorejoke_callback_query_handler(
         return
 
     await db["joke_views"].update_one(
-        {"user_id": update.effective_user.id, "joke_id": joke_id},
+        {"user_id": update.effective_user.id, "joke_id": ObjectId(joke_id)},
         {"$set": {"score": int(score), "scored_at": datetime.now(tz=timezone.utc)}},
     )
 
