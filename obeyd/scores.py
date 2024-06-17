@@ -4,6 +4,7 @@ from bson import ObjectId
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from obeyd.activities import log_activity_custom
 from obeyd.config import SCORES
 from obeyd.db import db
 from obeyd.middlewares import log_activity

@@ -4,6 +4,7 @@ from pymongo.errors import DuplicateKeyError
 from telegram import KeyboardButton, ReplyKeyboardMarkup, Update
 from telegram.ext import ContextTypes, ConversationHandler
 
+from obeyd.activities import log_activity_custom
 from obeyd.db import db
 from obeyd.middlewares import authenticated, log_activity, not_authenticated
 
@@ -44,6 +45,9 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
             }
         )
     except DuplicateKeyError:
+        await log_activity_custom(
+            update, "duplicate_nickname", {"nickname": update.message.text}
+        )
         await update.message.reply_text(
             text="این اسم رو قبلا یکی استفاده کرده 🙁 یک اسم دیگه انتخاب کن",
             reply_markup=ReplyKeyboardMarkup(
