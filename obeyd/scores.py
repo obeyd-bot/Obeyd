@@ -24,11 +24,10 @@ async def scorejoke_callback_query_handler(
         "user_id": update.effective_user.id,
         "joke_id": joke_id,
         "score": int(score),
-        "created_at": datetime.now(tz=timezone.utc),
     }
 
     view = await db["joke_views"].find_one(
-        {"user_id": update.effective_user.id, "joke_id": joke_id}
+        {"user_id": update.effective_user.id, "joke_id": ObjectId(joke_id)}
     )
     if view is not None and view["score"] is not None:
         await update.callback_query.answer("قبلا به این جوک رای دادی")

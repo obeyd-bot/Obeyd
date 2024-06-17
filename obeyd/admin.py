@@ -55,6 +55,25 @@ class JokeView(ModelView):
     form = JokeForm
 
 
+class JokeViewForm(form.Form):
+    kind = fields.StringField()
+    text = fields.StringField()
+    voice_file_id = fields.StringField()
+    accepted = fields.BooleanField()
+    creator_nickname = fields.StringField()
+
+
+class JokeViewView(ModelView):
+    column_list = (
+        "user_id",
+        "joke_id",
+        "score",
+        "viewed_at",
+        "scored_at",
+    )
+    form = JokeForm
+
+
 if __name__ == "__main__":
     admin = Admin(app, url="/")
     admin.add_view(UserView(db["users"]))
