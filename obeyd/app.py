@@ -4,9 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 import sentry_sdk
 from telegram import (
-    InlineQueryResult,
     InlineQueryResultArticle,
-    InputMessageContent,
     InputTextMessageContent,
     KeyboardButton,
     ReplyKeyboardMarkup,
