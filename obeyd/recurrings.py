@@ -4,10 +4,9 @@ import pytz
 from telegram import KeyboardButton, ReplyKeyboardMarkup, Update
 from telegram.ext import ContextTypes, ConversationHandler
 
-from obeyd.app import send_joke_to_user
 from obeyd.config import RECURRING_INTERVALS
 from obeyd.db import db
-from obeyd.jokes import random_joke
+from obeyd.jokes import random_joke, send_joke_to_user
 
 SETRECURRING_STATES_INTERVAL = 1
 

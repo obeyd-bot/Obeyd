@@ -2,8 +2,10 @@ from pathlib import Path
 from typing import Optional
 
 from bson import ObjectId
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
+from obeyd.config import SCORES, VOICES_BASE_DIR
 from obeyd.db import db
 
 
@@ -32,6 +34,30 @@ async def send_joke(
         )
     else:
         raise Exception("expected 'text' or 'voice_file_id' to be present in the joke")
+
+
+def score_inline_keyboard_markup(joke: dict):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=score_data["emoji"],
+                    callback_data=f"scorejoke:{str(joke['_id'])}:{score}",
+                )
+                for score, score_data in SCORES.items()
+            ]
+        ]
+    )
+
+
+async def send_joke_to_user(
+    joke: dict, chat_id: str | int, context: ContextTypes.DEFAULT_TYPE
+):
+    common = {
+        "reply_markup": score_inline_keyboard_markup(joke),
+    }
+
+    await send_joke(joke, chat_id, context, common)
 
 
 async def random_joke():

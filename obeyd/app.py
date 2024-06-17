@@ -24,10 +24,10 @@ from telegram.ext import (
     filters,
 )
 
-from obeyd.config import REVIEW_JOKES_CHAT_ID, SCORES, VOICES_BASE_DIR
+from obeyd.config import SCORES, VOICES_BASE_DIR
 from obeyd.db import db
-from obeyd.jokes import most_rated_joke, random_joke, send_joke
-from obeyd.middlewares import authenticated, log_activity, not_authenticated
+from obeyd.jokes import most_rated_joke, send_joke, send_joke_to_user
+from obeyd.middlewares import authenticated, log_activity
 from obeyd.recurrings import (
     SETRECURRING_STATES_INTERVAL,
     deleterecurring_handler,
@@ -39,6 +39,7 @@ from obeyd.review import (
     newjoke_callback_notify_admin,
     reviewjoke_callback_query_handler,
 )
+from obeyd.scores import scorejoke_callback_query_handler
 from obeyd.users import (
     SETNAME_STATES_NAME,
     START_STATES_NAME,
@@ -47,30 +48,6 @@ from obeyd.users import (
 )
 
 NEWJOKE_STATES_TEXT = 1
-
-
-def score_inline_keyboard_markup(joke: dict):
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text=score_data["emoji"],
-                    callback_data=f"scorejoke:{str(joke['_id'])}:{score}",
-                )
-                for score, score_data in SCORES.items()
-            ]
-        ]
-    )
-
-
-async def send_joke_to_user(
-    joke: dict, chat_id: str | int, context: ContextTypes.DEFAULT_TYPE
-):
-    common = {
-        "reply_markup": score_inline_keyboard_markup(joke),
-    }
-
-    await send_joke(joke, chat_id, context, common)
 
 
 @log_activity("joke")
@@ -170,63 +147,6 @@ async def newjoke_handler_joke(
     )
 
     return ConversationHandler.END
-
-
-@log_activity("scorejoke")
-async def scorejoke_callback_query_handler(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-):
-    assert update.effective_user
-    assert update.callback_query
-    assert isinstance(update.callback_query.data, str)
-
-    _, joke_id, score = tuple(update.callback_query.data.split(":"))
-
-    joke_score = {
-        "user_id": update.effective_user.id,
-        "joke_id": joke_id,
-        "score": int(score),
-        "created_at": datetime.now(tz=timezone.utc),
-    }
-
-    view = await db["joke_views"].find_one(
-        {"user_id": update.effective_user.id, "joke_id": joke_id}
-    )
-    if view is not None and view["score"] is not None:
-        await update.callback_query.answer("قبلا به این جوک رای دادی")
-        return
-
-    await db["joke_views"].update_one(
-        {"user_id": update.effective_user.id, "joke_id": joke_id},
-        {"$set": {"score": int(score), "scored_at": datetime.now(tz=timezone.utc)}},
-    )
-
-    await update.callback_query.answer(SCORES[score]["notif"])
-    assert context.job_queue
-    context.job_queue.run_once(
-        callback=scorejoke_callback_notify_creator,
-        when=0,
-        data=joke_score,
-    )
-
-
-async def scorejoke_callback_notify_creator(context: ContextTypes.DEFAULT_TYPE):
-    assert context.job
-    assert isinstance(context.job.data, dict)
-
-    joke_score = context.job.data
-
-    joke = await db["jokes"].find_one({"_id": ObjectId(joke_score["joke_id"])})
-    scored_by_user = await db["users"].find_one({"user_id": joke_score["user_id"]})
-    assert joke
-    assert scored_by_user
-
-    await context.bot.send_message(
-        chat_id=joke["creator_id"],
-        text=SCORES[str(joke_score["score"])]["score_notif"].format(
-            s=scored_by_user["nickname"]
-        ),
-    )
 
 
 @log_activity("cancel")
