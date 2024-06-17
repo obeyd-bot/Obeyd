@@ -103,7 +103,7 @@ if __name__ == "__main__":
         level=logging.DEBUG,
     )
 
-    defaults = Defaults(parse_mode=ParseMode.MARKDOWN_V2)
+    defaults = Defaults(parse_mode=ParseMode.HTML)
 
     app = (
         ApplicationBuilder()
