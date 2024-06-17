@@ -257,7 +257,12 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
 
     await update.message.reply_text(
-        "به به! خوش اومدی! میتونی من رو توی هر چتی منشن کنی تا جوک بفرستم 😁 اسمت رو بهم میگی؟"
+        "به به! خوش اومدی! میتونی من رو توی هر چتی منشن کنی تا جوک بفرستم 😁 اسمت رو بهم میگی؟",
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="/cancel")]],
+            one_time_keyboard=True,
+            resize_keyboard=True,
+        ),
     )
 
     return START_STATES_NAME
@@ -278,7 +283,12 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
         )
     except DuplicateKeyError:
         await update.message.reply_text(
-            "این اسم رو قبلا یکی استفاده کرده 🙁 یک اسم دیگه انتخاب کن"
+            text="این اسم رو قبلا یکی استفاده کرده 🙁 یک اسم دیگه انتخاب کن",
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[[KeyboardButton(text="/cancel")]],
+                one_time_keyboard=True,
+                resize_keyboard=True,
+            ),
         )
         return START_STATES_NAME
 
@@ -302,9 +312,9 @@ async def setname_handler(
     assert update.message
 
     await update.message.reply_text(
-        "حواست باشه که اسم قبلیت روی جوک هایی که تا الان فرستادی باقی میمونه. حالا اسمت رو بهم بگو.",
+        "بگو 😁",
         reply_markup=ReplyKeyboardMarkup(
-            [[KeyboardButton(text="/cancel")]],
+            keyboard=[[KeyboardButton(text="/cancel")]],
             one_time_keyboard=True,
             resize_keyboard=True,
         ),
@@ -326,7 +336,12 @@ async def setname_handler_name(
         )
     except DuplicateKeyError:
         await update.message.reply_text(
-            "این اسم رو قبلا یکی استفاده کرده 🙁 یک اسم دیگه انتخاب کن"
+            text="این اسم رو قبلا یکی استفاده کرده 🙁 یک اسم دیگه انتخاب کن",
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[[KeyboardButton(text="/cancel")]],
+                one_time_keyboard=True,
+                resize_keyboard=True,
+            ),
         )
         return SETNAME_STATES_NAME
 
@@ -452,7 +467,14 @@ async def newjoke_handler(
 ):
     assert update.message
 
-    await update.message.reply_text("بگو 😁")
+    await update.message.reply_text(
+        text="بگو 😁",
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="/cancel")]],
+            one_time_keyboard=True,
+            resize_keyboard=True,
+        ),
+    )
 
     return NEWJOKE_STATES_TEXT
 
@@ -490,7 +512,10 @@ async def newjoke_handler_joke(
     await update.message.reply_text(
         "😂👍",
         reply_markup=ReplyKeyboardMarkup(
-            keyboard=[[KeyboardButton(text="/joke"), KeyboardButton(text="/newjoke")]],
+            keyboard=[
+                [KeyboardButton(text="/joke")],
+                [KeyboardButton(text="/newjoke")],
+            ],
             one_time_keyboard=True,
             resize_keyboard=True,
         ),
@@ -602,9 +627,12 @@ async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.user_data is not None:
         context.user_data.clear()
     await update.message.reply_text(
-        "حرفی نیست",
+        "باشه 🙄 یه جوک بگم؟",
         reply_markup=ReplyKeyboardMarkup(
-            keyboard=[[KeyboardButton(text="/joke")]],
+            keyboard=[
+                [KeyboardButton(text="/joke")],
+                [KeyboardButton(text="/newjoke")],
+            ],
             one_time_keyboard=True,
             resize_keyboard=True,
         ),
@@ -669,7 +697,8 @@ async def setrecurring_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                 [
                     KeyboardButton(text=interval)
                     for interval in RECURRING_INTERVALS.keys()
-                ]
+                ],
+                [KeyboardButton(text="/cancel")],
             ],
             one_time_keyboard=True,
             resize_keyboard=True,
@@ -691,7 +720,14 @@ async def setrecurring_handler_interval(
     interval = RECURRING_INTERVALS.get(update.message.text.strip())
 
     if interval is None:
-        await update.message.reply_text("هان؟ متوجه نشدم 🤔")
+        await update.message.reply_text(
+            "هان؟ متوجه نشدم 🤔",
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[[KeyboardButton(text="/cancel")]],
+                one_time_keyboard=True,
+                resize_keyboard=True,
+            ),
+        )
         return SETRECURRING_STATES_INTERVAL
 
     recurring = {
