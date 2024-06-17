@@ -1,9 +1,7 @@
 import logging
 import os
 from datetime import datetime, time, timedelta, timezone
-from functools import wraps
 from pathlib import Path
-from typing import Optional
 from uuid import uuid4
 
 import pytz
@@ -31,6 +29,7 @@ from telegram.ext import (
 
 from obeyd.db import db
 from obeyd.jokes import most_rated_joke, random_joke
+from obeyd.middlewares import authenticated, log_activity, not_authenticated
 
 SCORES = {
     "1": {
@@ -178,76 +177,6 @@ async def update_joke_sent_to_admin(joke: dict, update: Update, accepted: bool):
         )
     else:
         raise Exception("expected 'text' or 'voice_file_id' to be present in the joke")
-
-
-def log_activity(kind):
-    def g(f):
-        @wraps(f)
-        async def h(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
-            assert update.effective_user
-
-            await db["activities"].insert_one(
-                {
-                    "kind": kind,
-                    "user_id": update.effective_user.id,
-                    "data": {},
-                    "created_at": datetime.now(tz=timezone.utc),
-                }
-            )
-
-            return await f(update, context, **kwargs)
-
-        return h
-
-    return g
-
-
-def not_authenticated(f):
-    @wraps(f)
-    async def g(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        assert update.effective_user
-
-        user = await db["users"].find_one({"user_id": update.effective_user.id})
-
-        if user is not None:
-            if update.message:
-                await update.message.reply_text(
-                    f"{user['nickname']}! ما قبلا با هم آشنا شدیم! برای اینکه برات جوک بفرستم از دستور /joke استفاده کن.",
-                    reply_markup=ReplyKeyboardMarkup(
-                        keyboard=[[KeyboardButton(text="/joke")]],
-                        one_time_keyboard=True,
-                        resize_keyboard=True,
-                    ),
-                )
-            return
-
-        return await f(update, context)
-
-    return g
-
-
-def authenticated(f):
-    @wraps(f)
-    async def g(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        assert update.effective_user
-
-        user = await db["users"].find_one({"user_id": update.effective_user.id})
-
-        if user is None:
-            if update.message:
-                await update.message.reply_text(
-                    "قبل از هر چیز، از دستور /start استفاده کن تا با هم آشنا بشیم.",
-                    reply_markup=ReplyKeyboardMarkup(
-                        keyboard=[[KeyboardButton(text="/start")]],
-                        one_time_keyboard=True,
-                        resize_keyboard=True,
-                    ),
-                )
-            return
-
-        return await f(update, context, user=user)
-
-    return g
 
 
 @not_authenticated
