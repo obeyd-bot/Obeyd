@@ -1,8 +1,37 @@
+from pathlib import Path
 from typing import Optional
 
 from bson import ObjectId
+from telegram.ext import ContextTypes
 
 from obeyd.db import db
+
+
+def format_text_joke(joke: dict):
+    return f"{joke['text']}\n\n*{joke['creator_nickname']}*"
+
+
+async def send_joke(
+    joke: dict,
+    chat_id: str | int,
+    context: ContextTypes.DEFAULT_TYPE,
+    kwargs: dict,
+):
+    if "text" in joke:
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"{format_text_joke(joke)}",
+            **kwargs,
+        )
+    elif "voice_file_id" in joke:
+        await context.bot.send_voice(
+            chat_id=chat_id,
+            voice=Path(f"{VOICES_BASE_DIR}/{joke['voice_file_id']}.bin"),
+            caption=f"*{joke['creator_nickname']}*",
+            **kwargs,
+        )
+    else:
+        raise Exception("expected 'text' or 'voice_file_id' to be present in the joke")
 
 
 async def random_joke():

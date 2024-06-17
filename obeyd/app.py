@@ -1,12 +1,10 @@
 import logging
 import os
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from uuid import uuid4
 
 import sentry_sdk
 from bson import ObjectId
-from pymongo.errors import DuplicateKeyError
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -26,14 +24,9 @@ from telegram.ext import (
     filters,
 )
 
-from obeyd.config import (
-    RECURRING_INTERVALS,
-    REVIEW_JOKES_CHAT_ID,
-    SCORES,
-    VOICES_BASE_DIR,
-)
+from obeyd.config import REVIEW_JOKES_CHAT_ID, SCORES, VOICES_BASE_DIR
 from obeyd.db import db
-from obeyd.jokes import most_rated_joke, random_joke
+from obeyd.jokes import most_rated_joke, random_joke, send_joke
 from obeyd.middlewares import authenticated, log_activity, not_authenticated
 from obeyd.recurrings import (
     SETRECURRING_STATES_INTERVAL,
@@ -42,6 +35,10 @@ from obeyd.recurrings import (
     setrecurring_handler,
     setrecurring_handler_interval,
 )
+from obeyd.review import (
+    newjoke_callback_notify_admin,
+    reviewjoke_callback_query_handler,
+)
 from obeyd.users import (
     SETNAME_STATES_NAME,
     START_STATES_NAME,
@@ -49,35 +46,7 @@ from obeyd.users import (
     start_handler_name,
 )
 
-
 NEWJOKE_STATES_TEXT = 1
-
-
-def format_text_joke(joke: dict):
-    return f"{joke['text']}\n\n*{joke['creator_nickname']}*"
-
-
-async def send_joke(
-    joke: dict,
-    chat_id: str | int,
-    context: ContextTypes.DEFAULT_TYPE,
-    kwargs: dict,
-):
-    if "text" in joke:
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text=f"{format_text_joke(joke)}",
-            **kwargs,
-        )
-    elif "voice_file_id" in joke:
-        await context.bot.send_voice(
-            chat_id=chat_id,
-            voice=Path(f"{VOICES_BASE_DIR}/{joke['voice_file_id']}.bin"),
-            caption=f"*{joke['creator_nickname']}*",
-            **kwargs,
-        )
-    else:
-        raise Exception("expected 'text' or 'voice_file_id' to be present in the joke")
 
 
 def score_inline_keyboard_markup(joke: dict):
@@ -102,53 +71,6 @@ async def send_joke_to_user(
     }
 
     await send_joke(joke, chat_id, context, common)
-
-
-def joke_review_inline_keyboard_markup(joke: dict):
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="رد",
-                    callback_data=f"reviewjoke:{joke['_id']}:reject",
-                ),
-                InlineKeyboardButton(
-                    text="تایید",
-                    callback_data=f"reviewjoke:{joke['_id']}:accept",
-                ),
-            ]
-        ]
-    )
-
-
-async def send_joke_to_admin(joke: dict, context: ContextTypes.DEFAULT_TYPE):
-    common = {
-        "reply_markup": joke_review_inline_keyboard_markup(joke),
-    }
-
-    await send_joke(joke, REVIEW_JOKES_CHAT_ID, context, common)
-
-
-async def update_joke_sent_to_admin(joke: dict, update: Update, accepted: bool):
-    assert update.callback_query
-    assert update.effective_user
-
-    info_msg = (
-        f"{'تایید' if accepted else 'رد'} شده توسط *{update.effective_user.full_name}*"
-    )
-
-    if "text" in joke:
-        await update.callback_query.edit_message_text(
-            text=f"{format_text_joke(joke)}\n\n{info_msg}",
-            reply_markup=joke_review_inline_keyboard_markup(joke),
-        )
-    elif "voice_file_id" in joke:
-        await update.callback_query.edit_message_caption(
-            caption=f"*{joke['creator_nickname']}*\n\n{info_msg}",
-            reply_markup=joke_review_inline_keyboard_markup(joke),
-        )
-    else:
-        raise Exception("expected 'text' or 'voice_file_id' to be present in the joke")
 
 
 @log_activity("joke")
@@ -248,45 +170,6 @@ async def newjoke_handler_joke(
     )
 
     return ConversationHandler.END
-
-
-async def newjoke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE):
-    assert context.job
-    assert isinstance(context.job.data, dict)
-
-    joke = context.job.data
-
-    await send_joke_to_admin(joke, context)
-
-
-async def reviewjoke_callback_query_handler(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-):
-    assert update.callback_query
-    assert update.effective_user
-    assert isinstance(update.callback_query.data, str)
-
-    _, joke_id, action = tuple(update.callback_query.data.split(":"))
-    accepted = None
-    if action == "accept":
-        accepted = True
-    elif action == "reject":
-        accepted = False
-    else:
-        raise Exception("expected accept or reject")
-
-    await db["jokes"].update_one(
-        {"_id": ObjectId(joke_id)}, {"$set": {"accepted": accepted}}
-    )
-
-    joke = await db["jokes"].find_one({"_id": ObjectId(joke_id)})
-    assert joke is not None
-
-    if accepted:
-        await update.callback_query.answer("تایید شد")
-    else:
-        await update.callback_query.answer("رد شد")
-    await update_joke_sent_to_admin(joke, update, accepted=accepted)
 
 
 @log_activity("scorejoke")
@@ -451,7 +334,7 @@ if __name__ == "__main__":
                         filters.TEXT & ~filters.COMMAND, setrecurring_handler_interval
                     )
                 ]
-            }, # type: ignore
+            },  # type: ignore
             fallbacks=[CommandHandler("cancel", cancel_handler)],
         )
     )
