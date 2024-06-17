@@ -24,6 +24,7 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
     ConversationHandler,
+    Defaults,
     MessageHandler,
     filters,
 )
@@ -125,7 +126,6 @@ async def send_joke_to_user(
     joke: dict, chat_id: str | int, context: ContextTypes.DEFAULT_TYPE
 ):
     common = {
-        "parse_mode": ParseMode.MARKDOWN_V2,
         "reply_markup": score_inline_keyboard_markup(joke),
     }
 
@@ -151,7 +151,6 @@ def joke_review_inline_keyboard_markup(joke: dict):
 
 async def send_joke_to_admin(joke: dict, context: ContextTypes.DEFAULT_TYPE):
     common = {
-        "parse_mode": ParseMode.MARKDOWN_V2,
         "reply_markup": joke_review_inline_keyboard_markup(joke),
     }
 
@@ -163,7 +162,6 @@ async def update_joke_sent_to_admin(joke: dict, update: Update, accepted: bool):
     assert update.effective_user
 
     common = {
-        "parse_mode": ParseMode.MARKDOWN_V2,
         "reply_markup": joke_review_inline_keyboard_markup(joke),
     }
 
@@ -286,7 +284,6 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     await update.message.reply_text(
         f"سلام *{update.message.text}* 🫡 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن 🙂",
-        parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="/joke")]],
             one_time_keyboard=True,
@@ -335,7 +332,6 @@ async def setname_handler_name(
 
     await update.message.reply_text(
         f"سلام *{update.message.text}* 🫡 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن 🙂",
-        parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="/joke")]],
             one_time_keyboard=True,
@@ -356,7 +352,6 @@ async def getname_handler(
 
     await update.message.reply_text(
         f"*{user['nickname']}*",
-        parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="/joke")]],
             one_time_keyboard=True,
@@ -597,7 +592,6 @@ async def scorejoke_callback_notify_creator(context: ContextTypes.DEFAULT_TYPE):
         text=SCORES[str(joke_score["score"])]["score_notif"].format(
             s=scored_by_user["nickname"]
         ),
-        parse_mode=ParseMode.MARKDOWN_V2,
     )
 
 
@@ -633,7 +627,6 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=user["_id"],
             text=f"یک جوک بگم؟",
-            parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=ReplyKeyboardMarkup(
                 keyboard=[[KeyboardButton(text="/joke")]],
                 one_time_keyboard=True,
@@ -788,11 +781,14 @@ if __name__ == "__main__":
         level=logging.INFO,
     )
 
+    defaults = Defaults(parse_mode=ParseMode.MARKDOWN_V2)
+
     app = (
         ApplicationBuilder()
         .read_timeout(30)
         .write_timeout(30)
         .token(os.environ["API_TOKEN"])
+        .defaults(defaults)
         .build()
     )
     job_queue = app.job_queue
