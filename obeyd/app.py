@@ -84,113 +84,78 @@ def format_text_joke(joke: dict):
     return f"{joke['text']}\n\n*{joke['creator_nickname']}*"
 
 
-async def send_joke_to_user(joke: dict, update: Update):
-    assert update.message
-
-    common = {
-        "parse_mode": ParseMode.MARKDOWN_V2,
-        "reply_markup": InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text=score_data["emoji"],
-                        callback_data=f"scorejoke:{str(joke['_id'])}:{score}",
-                    )
-                    for score, score_data in SCORES.items()
-                ]
-            ]
-        ),
-    }
-
-    if "text" in joke:
-        await update.message.reply_text(
-            text=format_text_joke(joke),
-            **common,
-        )
-    elif "voice_file_id" in joke:
-        await update.message.reply_voice(
-            voice=Path(f"{VOICES_BASE_DIR}/{joke['voice_file_id']}.bin"),
-            caption=f"*{joke['creator_nickname']}*",
-            **common,
-        )
-    else:
-        raise Exception(
-            "expected 'text' or 'voice_file_id' to be present in the joke"
-        )
-
-
-async def send_joke_to_user_by_context(
-    joke: dict, chat_id: str, context: ContextTypes.DEFAULT_TYPE
+async def send_joke(
+    joke: dict,
+    chat_id: str | int,
+    context: ContextTypes.DEFAULT_TYPE,
+    kwargs: dict,
 ):
-    common = {
-        "parse_mode": ParseMode.MARKDOWN_V2,
-        "reply_markup": InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text=score_data["emoji"],
-                        callback_data=f"scorejoke:{str(joke['_id'])}:{score}",
-                    )
-                    for score, score_data in SCORES.items()
-                ]
-            ]
-        ),
-    }
-
     if "text" in joke:
         await context.bot.send_message(
             chat_id=chat_id,
-            text=format_text_joke(joke),
-            **common,
+            text=f"{format_text_joke(joke)}",
+            **kwargs,
         )
     elif "voice_file_id" in joke:
         await context.bot.send_voice(
             chat_id=chat_id,
             voice=Path(f"{VOICES_BASE_DIR}/{joke['voice_file_id']}.bin"),
             caption=f"*{joke['creator_nickname']}*",
-            **common,
+            **kwargs,
         )
     else:
-        raise Exception(
-            "expected 'text' or 'voice_file_id' to be present in the joke"
-        )
+        raise Exception("expected 'text' or 'voice_file_id' to be present in the joke")
+
+
+def score_inline_keyboard_markup(joke: dict):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=score_data["emoji"],
+                    callback_data=f"scorejoke:{str(joke['_id'])}:{score}",
+                )
+                for score, score_data in SCORES.items()
+            ]
+        ]
+    )
+
+
+async def send_joke_to_user(
+    joke: dict, chat_id: str | int, context: ContextTypes.DEFAULT_TYPE
+):
+    common = {
+        "parse_mode": ParseMode.MARKDOWN_V2,
+        "reply_markup": score_inline_keyboard_markup(joke),
+    }
+
+    await send_joke(joke, chat_id, context, common)
+
+
+def joke_review_inline_keyboard_markup(joke: dict):
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="رد",
+                    callback_data=f"reviewjoke:{joke['_id']}:reject",
+                ),
+                InlineKeyboardButton(
+                    text="تایید",
+                    callback_data=f"reviewjoke:{joke['_id']}:accept",
+                ),
+            ]
+        ]
+    )
 
 
 async def send_joke_to_admin(joke: dict, context: ContextTypes.DEFAULT_TYPE):
     common = {
-        "chat_id": REVIEW_JOKES_CHAT_ID,
         "parse_mode": ParseMode.MARKDOWN_V2,
-        "reply_markup": InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="رد",
-                        callback_data=f"reviewjoke:{joke['_id']}:reject",
-                    ),
-                    InlineKeyboardButton(
-                        text="تایید",
-                        callback_data=f"reviewjoke:{joke['_id']}:accept",
-                    ),
-                ]
-            ]
-        ),
+        "reply_markup": joke_review_inline_keyboard_markup(joke),
     }
 
-    if "text" in joke:
-        await context.bot.send_message(
-            text=format_text_joke(joke),
-            **common,
-        )
-    elif "voice_file_id" in joke:
-        await context.bot.send_voice(
-            voice=Path(f"{VOICES_BASE_DIR}/{joke['voice_file_id']}.bin"),
-            caption=f"*{joke['creator_nickname']}*",
-            **common,
-        )
-    else:
-        raise Exception(
-            "expected 'text' or 'voice_file_id' to be present in the joke"
-        )
+    await send_joke(joke, REVIEW_JOKES_CHAT_ID, context, common)
 
 
 async def update_joke_sent_to_admin(joke: dict, update: Update, accepted: bool):
@@ -199,26 +164,12 @@ async def update_joke_sent_to_admin(joke: dict, update: Update, accepted: bool):
 
     common = {
         "parse_mode": ParseMode.MARKDOWN_V2,
-        "reply_markup": InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="رد",
-                        callback_data=f"reviewjoke:{joke['_id']}:reject",
-                    ),
-                    InlineKeyboardButton(
-                        text="تایید",
-                        callback_data=f"reviewjoke:{joke['_id']}:accept",
-                    ),
-                ]
-            ]
-        ),
+        "reply_markup": joke_review_inline_keyboard_markup(joke),
     }
 
-    if accepted:
-        info_msg = f"تایید شده توسط *{update.effective_user.full_name}*"
-    else:
-        info_msg = f"رد شده توسط *{update.effective_user.full_name}*"
+    info_msg = (
+        f"{'تایید' if accepted else 'رد'} شده توسط *{update.effective_user.full_name}*"
+    )
 
     if "text" in joke:
         await update.callback_query.edit_message_text(
@@ -468,6 +419,7 @@ async def most_rated_joke(not_viewed_by_user_id: Optional[int]):
 async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
     assert update.effective_user
+    assert update.effective_chat
 
     joke = await most_rated_joke(not_viewed_by_user_id=update.effective_user.id)
 
@@ -492,7 +444,8 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
     )
 
-    await send_joke_to_user(joke, update)
+    chat_id = update.effective_chat.id
+    await send_joke_to_user(joke, chat_id, context)
 
     return ConversationHandler.END
 
@@ -819,7 +772,7 @@ async def recurring_joke_callback(context: ContextTypes.DEFAULT_TYPE):
     joke = await random_joke()
     assert joke is not None
 
-    await send_joke_to_user_by_context(joke, recurring["chat_id"], context)
+    await send_joke_to_user(joke, recurring["chat_id"], context)
 
 
 if __name__ == "__main__":
