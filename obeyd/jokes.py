@@ -7,6 +7,8 @@ from bson import ObjectId
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    InlineQueryResultArticle,
+    InputTextMessageContent,
     KeyboardButton,
     ReplyKeyboardMarkup,
     Update,
@@ -258,11 +260,13 @@ async def reviewjoke_callback_query_handler(
     await update_joke_sent_to_admin(joke, update, accepted=accepted)
 
 
-async def random_joke():
+async def random_joke(constraints: list[dict] = []):
     try:
         return (
             await db["jokes"]
-            .aggregate([{"$match": {"accepted": True}}, {"$sample": {"size": 1}}])
+            .aggregate(
+                [{"$match": {"accepted": True}}, {"$sample": {"size": 1}}, *constraints]
+            )
             .next()
         )
     except StopAsyncIteration:
@@ -306,3 +310,24 @@ async def most_rated_joke(not_viewed_by_user_id: Optional[int]):
         return await db["jokes"].find_one({"_id": joke_id})
     except StopAsyncIteration:
         return None
+
+
+async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    assert update.inline_query
+
+    joke = await random_joke(constraints=[{"$match": {"text": {"$exists": True}}}])
+    assert joke is not None
+
+    await update.inline_query.answer(
+        results=[
+            InlineQueryResultArticle(
+                id="joke",
+                title="جوک بگو",
+                input_message_content=InputTextMessageContent(
+                    message_text=format_text_joke(joke)
+                ),
+            )
+        ],
+        is_personal=True,
+        cache_time=5,
+    )

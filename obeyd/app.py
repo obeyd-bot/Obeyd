@@ -4,8 +4,6 @@ from datetime import datetime, timedelta, timezone
 
 import sentry_sdk
 from telegram import (
-    InlineQueryResultArticle,
-    InputTextMessageContent,
     KeyboardButton,
     ReplyKeyboardMarkup,
     Update,
@@ -14,6 +12,7 @@ from telegram.constants import ParseMode
 from telegram.ext import (
     ApplicationBuilder,
     CallbackQueryHandler,
+    ChosenInlineResultHandler,
     CommandHandler,
     ContextTypes,
     ConversationHandler,
@@ -26,6 +25,7 @@ from telegram.ext import (
 from obeyd.db import db
 from obeyd.jokes import (
     NEWJOKE_STATES_TEXT,
+    inline_query_handler,
     joke_handler,
     newjoke_handler,
     newjoke_handler_joke,
@@ -92,25 +92,6 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
                 resize_keyboard=True,
             ),
         )
-
-
-async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("inline query incoming...")
-
-    assert update.inline_query
-
-    await update.inline_query.answer(
-        results=[
-            InlineQueryResultArticle(
-                id="joke",
-                title="جوک بگو!",
-                input_message_content=InputTextMessageContent(
-                    "فعلا نمیتونم جوک بگم 😿"
-                ),
-            )
-        ],
-        cache_time=10,
-    )
 
 
 if __name__ == "__main__":
