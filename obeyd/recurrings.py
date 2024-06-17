@@ -120,14 +120,14 @@ def schedule_recurring(recurring: dict, context: ContextTypes.DEFAULT_TYPE):
         context.job_queue.run_daily(
             recurring_joke_callback,
             data=recurring,
-            time=time(hour=18, tzinfo=pytz.timezone("Asia/Tehran")),
+            time=time(hour=20, tzinfo=pytz.timezone("Asia/Tehran")),
             name=job_name,
         )
     elif recurring["interval"] == "weekly":
         context.job_queue.run_daily(
             recurring_joke_callback,
             data=recurring,
-            time=time(hour=18, tzinfo=pytz.timezone("Asia/Tehran")),
+            time=time(hour=20, tzinfo=pytz.timezone("Asia/Tehran")),
             days=(4,),
             name=job_name,
         )

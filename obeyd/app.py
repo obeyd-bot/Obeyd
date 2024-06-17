@@ -1,13 +1,10 @@
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 
+import pytz
 import sentry_sdk
-from telegram import (
-    KeyboardButton,
-    ReplyKeyboardMarkup,
-    Update,
-)
+from telegram import KeyboardButton, ReplyKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.ext import (
     ApplicationBuilder,
@@ -182,9 +179,9 @@ if __name__ == "__main__":
     app.add_handler(InlineQueryHandler(inline_query_handler))
 
     # jobs
-    job_queue.run_repeating(
+    job_queue.run_daily(
         callback=notify_inactive_users_callback,
-        interval=timedelta(hours=1).total_seconds(),
+        time=time(hour=20, tzinfo=pytz.timezone("Asia/Tehran")),
     )
 
     job_queue.run_once(schedule_recurrings, when=0)
