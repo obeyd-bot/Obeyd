@@ -312,6 +312,7 @@ async def most_rated_joke(not_viewed_by_user_id: Optional[int]):
         return None
 
 
+@log_activity("inlinequery")
 async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.inline_query
 

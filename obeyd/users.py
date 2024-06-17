@@ -12,6 +12,7 @@ SETNAME_STATES_NAME = 1
 
 
 @not_authenticated
+@log_activity("start")
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
 

@@ -7,10 +7,12 @@ from telegram.ext import ContextTypes, ConversationHandler
 from obeyd.config import RECURRING_INTERVALS
 from obeyd.db import db
 from obeyd.jokes import random_joke, send_joke_to_user
+from obeyd.middlewares import log_activity
 
 SETRECURRING_STATES_INTERVAL = 1
 
 
+@log_activity("setrecurring")
 async def setrecurring_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
     await update.message.reply_text(
@@ -82,6 +84,7 @@ async def setrecurring_handler_interval(
     return ConversationHandler.END
 
 
+@log_activity("deleterecurring")
 async def deleterecurring_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
     assert update.effective_chat

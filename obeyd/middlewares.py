@@ -1,27 +1,18 @@
-from datetime import datetime, timezone
 from functools import wraps
+from typing import Any, Optional
 
 from telegram import KeyboardButton, ReplyKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
+from obeyd.activities import log_activity_custom
 from obeyd.db import db
 
 
-def log_activity(kind):
+def log_activity(kind, data: Optional[dict[str, Any]] = None):
     def g(f):
         @wraps(f)
         async def h(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
-            assert update.effective_user
-
-            await db["activities"].insert_one(
-                {
-                    "kind": kind,
-                    "user_id": update.effective_user.id,
-                    "data": {},
-                    "created_at": datetime.now(tz=timezone.utc),
-                }
-            )
-
+            await log_activity_custom(update, kind, data)
             return await f(update, context, **kwargs)
 
         return h
