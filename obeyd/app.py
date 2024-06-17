@@ -30,6 +30,7 @@ from telegram.ext import (
 )
 
 from obeyd.db import db
+from obeyd.jokes import most_rated_joke, random_joke
 
 SCORES = {
     "1": {
@@ -161,10 +162,6 @@ async def update_joke_sent_to_admin(joke: dict, update: Update, accepted: bool):
     assert update.callback_query
     assert update.effective_user
 
-    common = {
-        "reply_markup": joke_review_inline_keyboard_markup(joke),
-    }
-
     info_msg = (
         f"{'تایید' if accepted else 'رد'} شده توسط *{update.effective_user.full_name}*"
     )
@@ -172,11 +169,12 @@ async def update_joke_sent_to_admin(joke: dict, update: Update, accepted: bool):
     if "text" in joke:
         await update.callback_query.edit_message_text(
             text=f"{format_text_joke(joke)}\n\n{info_msg}",
-            **common,
+            reply_markup=joke_review_inline_keyboard_markup(joke),
         )
     elif "voice_file_id" in joke:
         await update.callback_query.edit_message_caption(
-            caption=f"*{joke['creator_nickname']}*\n\n{info_msg}", **common
+            caption=f"*{joke['creator_nickname']}*\n\n{info_msg}",
+            reply_markup=joke_review_inline_keyboard_markup(joke),
         )
     else:
         raise Exception("expected 'text' or 'voice_file_id' to be present in the joke")
@@ -373,56 +371,6 @@ async def getname_handler(
             resize_keyboard=True,
         ),
     )
-
-
-async def random_joke():
-    try:
-        return (
-            await db["jokes"]
-            .aggregate([{"$match": {"accepted": True}}, {"$sample": {"size": 1}}])
-            .next()
-        )
-    except StopAsyncIteration:
-        return None
-
-
-async def most_rated_joke(not_viewed_by_user_id: Optional[int]):
-    views = (
-        await db["joke_views"].find({"user_id": not_viewed_by_user_id}).to_list(None)
-    )
-
-    try:
-        joke_id = (
-            await db["jokes"]
-            .aggregate(
-                [
-                    {
-                        "$match": {
-                            "accepted": True,
-                            "_id": {
-                                "$nin": [ObjectId(view["joke_id"]) for view in views]
-                            },
-                        }
-                    },
-                    {
-                        "$lookup": {
-                            "from": "joke_views",
-                            "localField": "_id",
-                            "foreignField": "joke_id",
-                            "as": "views",
-                        },
-                    },
-                    {"$unwind": {"path": "$views", "preserveNullAndEmptyArrays": True}},
-                    {"$set": {"views.score": {"$ifNull": ["$views.score", 3]}}},
-                    {"$group": {"_id": "$_id", "avg_score": {"$avg": "$views.score"}}},
-                    {"$sort": {"avg_score": -1}},
-                ]
-            )
-            .next()
-        )["_id"]
-        return await db["jokes"].find_one({"_id": joke_id})
-    except StopAsyncIteration:
-        return None
 
 
 @log_activity("joke")
