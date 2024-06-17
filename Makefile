@@ -12,6 +12,7 @@ start-admin-server:
 	python3 obeyd/admin.py
 
 push-master:
+	git push origin devel
 	git checkout master
 	git rebase devel
 	git push origin master
