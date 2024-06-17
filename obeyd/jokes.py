@@ -30,13 +30,13 @@ async def send_joke(
     context: ContextTypes.DEFAULT_TYPE,
     kwargs: dict,
 ):
-    if "text" in joke:
+    if joke["kind"] == "text":
         await context.bot.send_message(
             chat_id=chat_id,
             text=f"{format_text_joke(joke)}",
             **kwargs,
         )
-    elif "voice_file_id" in joke:
+    elif joke["kind"] == "voice":
         await context.bot.send_voice(
             chat_id=chat_id,
             voice=Path(f"{VOICES_BASE_DIR}/{joke['voice_file_id']}.bin"),
@@ -44,7 +44,7 @@ async def send_joke(
             **kwargs,
         )
     else:
-        raise Exception("expected 'text' or 'voice_file_id' to be present in the joke")
+        raise Exception("expected 'kind' to be one of 'text' or 'voice'")
 
 
 def score_inline_keyboard_markup(joke: dict):
@@ -140,9 +140,9 @@ async def newjoke_handler_joke(
         file = await update.message.voice.get_file()
         file_id = str(uuid4())
         await file.download_to_drive(custom_path=f"{VOICES_BASE_DIR}/{file_id}.bin")
-        joke = {"voice_file_id": file_id}
+        joke = {"kind": "voice", "voice_file_id": file_id}
     else:
-        joke = {"text": update.message.text}
+        joke = {"kind": "text", "text": update.message.text}
 
     joke = {
         **joke,
@@ -215,18 +215,18 @@ async def update_joke_sent_to_admin(joke: dict, update: Update, accepted: bool):
         f"{'تایید' if accepted else 'رد'} شده توسط *{update.effective_user.full_name}*"
     )
 
-    if "text" in joke:
+    if joke["kind"] == "text":
         await update.callback_query.edit_message_text(
             text=f"{format_text_joke(joke)}\n\n{info_msg}",
             reply_markup=joke_review_inline_keyboard_markup(joke),
         )
-    elif "voice_file_id" in joke:
+    elif joke["kind"] == "voice":
         await update.callback_query.edit_message_caption(
             caption=f"*{joke['creator_nickname']}*\n\n{info_msg}",
             reply_markup=joke_review_inline_keyboard_markup(joke),
         )
     else:
-        raise Exception("expected 'text' or 'voice_file_id' to be present in the joke")
+        raise Exception("expected 'kind' to be one of 'text' or 'voice'")
 
 
 @log_activity("reviewjoke")
