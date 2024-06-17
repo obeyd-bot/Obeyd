@@ -97,6 +97,8 @@ async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
 
 
 async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("inline query incoming...")
+
     assert update.inline_query
 
     await update.inline_query.answer(
