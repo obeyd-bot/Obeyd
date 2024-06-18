@@ -62,7 +62,7 @@ def score_inline_keyboard_markup(joke: dict):
     )
 
 
-async def send_joke_to_user(
+async def send_joke_to_chat(
     joke: dict, chat_id: str | int, context: ContextTypes.DEFAULT_TYPE
 ):
     common = {
@@ -105,7 +105,7 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     chat_id = update.effective_chat.id
-    await send_joke_to_user(joke, chat_id, context)
+    await send_joke_to_chat(joke, chat_id, context)
 
     return ConversationHandler.END
 

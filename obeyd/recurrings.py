@@ -6,7 +6,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 
 from obeyd.config import RECURRING_INTERVALS
 from obeyd.db import db
-from obeyd.jokes import random_joke, send_joke_to_user, thompson_sampled_joke
+from obeyd.jokes import random_joke, send_joke_to_chat, thompson_sampled_joke
 from obeyd.middlewares import log_activity
 
 SETRECURRING_STATES_INTERVAL = 1
@@ -150,4 +150,4 @@ async def recurring_joke_callback(context: ContextTypes.DEFAULT_TYPE):
     joke = await thompson_sampled_joke(for_user_id=None)
     assert joke is not None
 
-    await send_joke_to_user(joke, recurring["chat_id"], context)
+    await send_joke_to_chat(joke, recurring["chat_id"], context)
