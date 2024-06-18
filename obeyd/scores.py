@@ -4,9 +4,9 @@ from bson import ObjectId
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from obeyd.activities import log_activity_custom
 from obeyd.config import SCORES
 from obeyd.db import db
+from obeyd.jokes import format_text_joke
 from obeyd.middlewares import log_activity
 
 
@@ -64,9 +64,11 @@ async def scorejoke_callback_notify_creator(context: ContextTypes.DEFAULT_TYPE):
     assert joke
     assert scored_by_user
 
-    await context.bot.send_message(
-        chat_id=joke["creator_id"],
-        text=SCORES[joke_score["score"]]["score_notif"].format(
-            s=scored_by_user["nickname"]
-        ),
+    msg = SCORES[joke_score["score"]]["score_notif"].format(
+        s=scored_by_user["nickname"]
     )
+
+    if joke["kind"] == "text":
+        msg += f"\n\n{format_text_joke(joke)}"
+
+    await context.bot.send_message(chat_id=joke["creator_id"], text=msg)
