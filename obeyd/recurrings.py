@@ -1,4 +1,4 @@
-from datetime import datetime, time, timezone
+from datetime import datetime, time, timedelta, timezone
 
 import pytz
 from telegram import KeyboardButton, ReplyKeyboardMarkup, Update
@@ -132,6 +132,13 @@ def schedule_recurring(recurring: dict, context: ContextTypes.DEFAULT_TYPE):
             data=recurring,
             time=time(hour=20, tzinfo=pytz.timezone("Asia/Tehran")),
             days=(4,),
+            name=job_name,
+        )
+    elif recurring["interval"] == "minutely":
+        context.job_queue.run_repeating(
+            recurring_joke_callback,
+            data=recurring,
+            interval=timedelta(minutes=1),
             name=job_name,
         )
 
