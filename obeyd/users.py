@@ -72,13 +72,13 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 "user_id": update.effective_user.id,
                 "user_name": update.effective_user.username,
                 "user_fullname": update.effective_user.full_name,
-                "nickname": update.message.text,
+                "nickname": chosen_nickname,
                 "joined_at": datetime.now(tz=timezone.utc),
             }
         )
     except DuplicateKeyError:
         await log_activity_custom(
-            update, "duplicate_nickname", {"nickname": update.message.text}
+            update, "duplicate_nickname", {"nickname": chosen_nickname}
         )
         await update.message.reply_text(
             text="این اسم رو قبلا یکی استفاده کرده 🙁 یک اسم دیگه انتخاب کن",
@@ -91,7 +91,7 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return START_STATES_NAME
 
     await update.message.reply_text(
-        f"سلام <b>{update.message.text}</b> 🫡 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن 🙂",
+        f"سلام <b>{chosen_nickname}</b> 🫡 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن 🙂",
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="/joke")]],
             one_time_keyboard=True,
@@ -160,7 +160,7 @@ async def setname_handler_name(
         return SETNAME_STATES_NAME
 
     await update.message.reply_text(
-        f"سلام <b>{update.message.text}</b> 🫡 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن 🙂",
+        f"سلام <b>{chosen_nickname}</b> 🫡 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن 🙂",
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="/joke")]],
             one_time_keyboard=True,
