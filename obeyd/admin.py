@@ -71,12 +71,13 @@ class JokeViewView(ModelView):
         "viewed_at",
         "scored_at",
     )
-    form = JokeForm
+    form = JokeViewForm
 
 
 if __name__ == "__main__":
     admin = Admin(app, url="/")
     admin.add_view(UserView(db["users"]))
     admin.add_view(JokeView(db["jokes"]))
+    admin.add_view(JokeViewView(db["joke_views"]))
 
     app.run(host="0.0.0.0", port=5000, debug=True)
