@@ -40,10 +40,6 @@ RECURRING_INTERVALS = {
         "code": "weekly",
         "text": "هر هفته پنج شنبه ساعت ۸ شب",
     },
-    "هر دقیقه": {
-        "code": "minutely",
-        "text": "هر دقیقه",
-    },
 }
 
 
