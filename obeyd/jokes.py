@@ -212,9 +212,7 @@ async def update_joke_sent_to_admin(joke: dict, update: Update, accepted: bool):
     assert update.callback_query
     assert update.effective_user
 
-    info_msg = (
-        f"{'تایید' if accepted else 'رد'} شده توسط <b>{update.effective_user.full_name}</b>"
-    )
+    info_msg = f"{'تایید' if accepted else 'رد'} شده توسط <b>{update.effective_user.full_name}</b>"
 
     if joke["kind"] == "text":
         await update.callback_query.edit_message_text(
@@ -274,7 +272,7 @@ async def random_joke(constraints: list[dict] = []):
         return None
 
 
-async def thompson_sampled_joke(for_user_id: int) -> dict | None:
+async def thompson_sampled_joke(for_user_id: int | None) -> dict | None:
     views = await db["joke_views"].find({"user_id": for_user_id}).to_list(None)
 
     pipeline = [
@@ -292,7 +290,6 @@ async def thompson_sampled_joke(for_user_id: int) -> dict | None:
                 "as": "views",
             }
         },
-        {"$unwind": {"path": "$views", "preserveNullAndEmptyArrays": True}},
     ]
 
     results = await db.jokes.aggregate(pipeline).to_list(None)
@@ -300,24 +297,42 @@ async def thompson_sampled_joke(for_user_id: int) -> dict | None:
     if len(results) == 0:
         return None
 
-    jokes = list(set([result["_id"] for result in results]))
-    joke_index = {joke_id: i for i, joke_id in enumerate(jokes)}
+    thompson = ThompsonSampling(n_arms=len(results), default_mean=3.0, default_var=2.0)
 
-    n_arms = len(jokes)
-    thompson = ThompsonSampling(n_arms)
-    for result in results:
-        thompson.update(
-            joke_index[result["_id"]], result.get("views", {}).get("score", 3) or 3
-        )
+    average_user_score = {}
+    for joke in results:
+        for view in joke["views"]:
+            if "score" not in view or view["score"] is None:
+                continue
+            if view["user_id"] not in average_user_score:
+                average_user_score[view["user_id"]] = {"count": 0, "sum": 0}
+            average_user_score[view["user_id"]]["count"] += 1
+            average_user_score[view["user_id"]]["sum"] += view["score"]
 
-    return await db["jokes"].find_one({"_id": jokes[thompson.select_arm()]})
+    for i, joke in enumerate(results):
+        for view in joke["views"]:
+            score = None
+            if "score" not in view or view["score"] is None:
+                if view["user_id"] in average_user_score:
+                    score = (
+                        average_user_score[view["user_id"]]["sum"]
+                        / average_user_score[view["user_id"]]["count"]
+                    )
+            else:
+                score = view["score"]
+            if score:
+                thompson.insert_observation(i, score)
+
+    selected_joke = results[int(thompson.select_arm())]
+
+    return selected_joke
 
 
 @log_activity("inlinequery")
 async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.inline_query
 
-    joke = await random_joke(constraints=[{"$match": {"text": {"$exists": True}}}])
+    joke = await thompson_sampled_joke(for_user_id=None)
     assert joke is not None
 
     await update.inline_query.answer(

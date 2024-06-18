@@ -2,25 +2,36 @@ import numpy as np
 
 
 class ThompsonSampling:
-    def __init__(self, n_arms):
+    def __init__(self, n_arms, default_mean: float, default_var: float):
         self.n_arms = n_arms
-        # Initialize mean and variance for each arm
-        self.means = np.zeros(n_arms)
-        self.vars = np.ones(n_arms)
+        self.observations = {i: [] for i in range(self.n_arms)}
+        self.default_mean = default_mean
+        self.default_var = default_var
 
     def select_arm(self):
-        sampled_values = np.random.normal(self.means, np.sqrt(self.vars))
-        print(sampled_values)
+        means = np.array(
+            [
+                (
+                    np.mean(self.observations[i])
+                    if self.observations[i]
+                    else self.default_mean
+                )
+                for i in range(self.n_arms)
+            ]
+        )
+        vars = np.array(
+            [
+                (
+                    np.var(self.observations[i])
+                    if self.observations[i]
+                    else self.default_var
+                )
+                for i in range(self.n_arms)
+            ]
+        )
+
+        sampled_values = np.random.normal(means, np.sqrt(vars))
         return np.argmax(sampled_values)
 
-    def update(self, chosen_arm, reward):
-        # Update the mean and variance for the chosen arm
-        mean = self.means[chosen_arm]
-        var = self.vars[chosen_arm]
-
-        # Update the parameters
-        new_mean = (mean * var + reward) / (var + 1)
-        new_var = var / (var + 1)
-
-        self.means[chosen_arm] = new_mean
-        self.vars[chosen_arm] = new_var
+    def insert_observation(self, chosen_arm, value):
+        self.observations[chosen_arm].append(value)
