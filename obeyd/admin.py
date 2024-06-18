@@ -16,7 +16,7 @@ app.config["SECRET_KEY"] = os.environ["FLASK_SECRET_KEY"]
 
 
 class UserForm(form.Form):
-    user_id = fields.StringField()
+    user_id = fields.IntegerField()
     user_name = fields.StringField()
     user_fullname = fields.StringField()
     nickname = fields.StringField()
