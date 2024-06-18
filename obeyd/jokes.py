@@ -22,7 +22,7 @@ from obeyd.thompson import ThompsonSampling
 
 
 def format_text_joke(joke: dict):
-    return f"{joke['text']}\n\n*{joke['creator_nickname']}*"
+    return f"{joke['text']}\n\n<b>{joke['creator_nickname']}</b>"
 
 
 async def send_joke(
@@ -41,7 +41,7 @@ async def send_joke(
         await context.bot.send_voice(
             chat_id=chat_id,
             voice=Path(f"{VOICES_BASE_DIR}/{joke['voice_file_id']}.bin"),
-            caption=f"*{joke['creator_nickname']}*",
+            caption=f"<b>{joke['creator_nickname']}</b>",
             **kwargs,
         )
     else:
@@ -213,7 +213,7 @@ async def update_joke_sent_to_admin(joke: dict, update: Update, accepted: bool):
     assert update.effective_user
 
     info_msg = (
-        f"{'تایید' if accepted else 'رد'} شده توسط *{update.effective_user.full_name}*"
+        f"{'تایید' if accepted else 'رد'} شده توسط <b>{update.effective_user.full_name}</b>"
     )
 
     if joke["kind"] == "text":
@@ -223,7 +223,7 @@ async def update_joke_sent_to_admin(joke: dict, update: Update, accepted: bool):
         )
     elif joke["kind"] == "voice":
         await update.callback_query.edit_message_caption(
-            caption=f"*{joke['creator_nickname']}*\n\n{info_msg}",
+            caption=f"<b>{joke['creator_nickname']}</b>\n\n{info_msg}",
             reply_markup=joke_review_inline_keyboard_markup(joke),
         )
     else:

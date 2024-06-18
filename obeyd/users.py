@@ -59,7 +59,7 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
         return START_STATES_NAME
 
     await update.message.reply_text(
-        f"سلام *{update.message.text}* 🫡 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن 🙂",
+        f"سلام <b>{update.message.text}</b> 🫡 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن 🙂",
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="/joke")]],
             one_time_keyboard=True,
@@ -112,7 +112,7 @@ async def setname_handler_name(
         return SETNAME_STATES_NAME
 
     await update.message.reply_text(
-        f"سلام *{update.message.text}* 🫡 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن 🙂",
+        f"سلام <b>{update.message.text}</b> 🫡 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن 🙂",
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="/joke")]],
             one_time_keyboard=True,
@@ -132,7 +132,7 @@ async def getname_handler(
     assert update.effective_user
 
     await update.message.reply_text(
-        f"*{user['nickname']}*",
+        f"<b>{user['nickname']}</b>",
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[[KeyboardButton(text="/joke")]],
             one_time_keyboard=True,
