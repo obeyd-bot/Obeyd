@@ -12,6 +12,22 @@ START_STATES_NAME = 1
 SETNAME_STATES_NAME = 1
 
 
+class InvalidNicknameError(Exception):
+    def __init__(self, nickname: str, reason: str):
+        self.nickname = nickname
+        self.reason = reason
+
+
+def validate_nickname(nickname: str):
+    nickname = nickname.strip()
+    if len(nickname) == 0:
+        raise InvalidNicknameError(nickname, "اسمت نمیتونه خالی باشه")
+    if len(nickname) > 20:
+        raise InvalidNicknameError(
+            nickname, "طول اسمت نمیتونه بیشتر از ۲۰ کاراکتر باشه"
+        )
+
+
 @not_authenticated
 @log_activity("start")
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -32,7 +48,23 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @not_authenticated
 async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
+    assert update.message.text
     assert update.effective_user
+
+    chosen_nickname = update.message.text
+
+    try:
+        chosen_nickname = validate_nickname(chosen_nickname)
+    except InvalidNicknameError as e:
+        await update.message.reply_text(
+            text=e.reason,
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[[KeyboardButton(text="/cancel")]],
+                one_time_keyboard=True,
+                resize_keyboard=True,
+            ),
+        )
+        return START_STATES_NAME
 
     try:
         await db["users"].insert_one(
@@ -94,11 +126,27 @@ async def setname_handler_name(
     update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict
 ):
     assert update.message
+    assert update.message.text
     assert update.effective_user
+
+    chosen_nickname = update.message.text
+
+    try:
+        chosen_nickname = validate_nickname(chosen_nickname)
+    except InvalidNicknameError as e:
+        await update.message.reply_text(
+            text=e.reason,
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[[KeyboardButton(text="/cancel")]],
+                one_time_keyboard=True,
+                resize_keyboard=True,
+            ),
+        )
+        return SETNAME_STATES_NAME
 
     try:
         await db["users"].update_one(
-            {"user_id": user["user_id"]}, {"$set": {"nickname": update.message.text}}
+            {"user_id": user["user_id"]}, {"$set": {"nickname": chosen_nickname}}
         )
     except DuplicateKeyError:
         await update.message.reply_text(
