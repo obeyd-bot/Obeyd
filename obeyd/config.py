@@ -4,27 +4,27 @@ REVIEW_JOKES_CHAT_ID = os.environ["OBEYD_REVIEW_JOKES_CHAT_ID"]
 
 
 SCORES = {
-    "1": {
+    1: {
         "emoji": "💩",
         "notif": "💩💩💩",
         "score_notif": "{s} با جوکت اصلا حال نکرد 💩💩💩",
     },
-    "2": {
+    2: {
         "emoji": "😐",
         "notif": "😐😐😐",
         "score_notif": "{s} با جوکت حال نکرد 😐😐😐",
     },
-    "3": {
+    3: {
         "emoji": "🙂",
         "notif": "🙂🙂🙂",
         "score_notif": "{s} فکر میکنه جوکت بد هم نبوده 🙂🙂🙂",
     },
-    "4": {
+    4: {
         "emoji": "😁",
         "notif": "😁😁😁",
         "score_notif": "{s} با جوکت حال کرد 😁😁😁",
     },
-    "5": {
+    5: {
         "emoji": "😂",
         "notif": "😂😂😂",
         "score_notif": "{s} با جوکت خیلی حال کرد 😂😂😂",

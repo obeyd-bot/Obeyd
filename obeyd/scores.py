@@ -19,23 +19,29 @@ async def scorejoke_callback_query_handler(
     assert isinstance(update.callback_query.data, str)
 
     _, joke_id, score = tuple(update.callback_query.data.split(":"))
+    joke_id = ObjectId(joke_id)
+    score = int(score)
 
     joke_score = {
         "user_id": update.effective_user.id,
         "joke_id": joke_id,
-        "score": int(score),
+        "score": score,
     }
 
     view = await db["joke_views"].find_one(
-        {"user_id": update.effective_user.id, "joke_id": ObjectId(joke_id)}
+        {"user_id": update.effective_user.id, "joke_id": joke_id}
     )
     if view is not None and view["score"] is not None:
         await update.callback_query.answer("قبلا به این جوک رای دادی")
         return
 
-    await db["joke_views"].update_one(
-        {"user_id": update.effective_user.id, "joke_id": ObjectId(joke_id)},
-        {"$set": {"score": int(score), "scored_at": datetime.now(tz=timezone.utc)}},
+    now = datetime.now(tz=timezone.utc)
+    view = await db["joke_views"].update_one(
+        {"user_id": update.effective_user.id, "joke_id": joke_id},
+        {
+            "$set": {"score": int(score), "scored_at": now},
+            "$setOnInsert": {"viewed_at": now},
+        },
     )
 
     await update.callback_query.answer(SCORES[score]["notif"])
@@ -60,7 +66,7 @@ async def scorejoke_callback_notify_creator(context: ContextTypes.DEFAULT_TYPE):
 
     await context.bot.send_message(
         chat_id=joke["creator_id"],
-        text=SCORES[str(joke_score["score"])]["score_notif"].format(
+        text=SCORES[joke_score["score"]]["score_notif"].format(
             s=scored_by_user["nickname"]
         ),
     )
