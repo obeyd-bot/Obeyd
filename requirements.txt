@@ -2,3 +2,4 @@ python-telegram-bot[job-queue]==21.3
 motor==3.4.0
 Flask-Admin==1.6.1
 sentry-sdk==2.5.0
+numpy==2.0.0

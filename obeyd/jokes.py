@@ -18,6 +18,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 from obeyd.config import REVIEW_JOKES_CHAT_ID, SCORES, VOICES_BASE_DIR
 from obeyd.db import db
 from obeyd.middlewares import authenticated, log_activity
+from obeyd.thompson import ThompsonSampling
 
 
 def format_text_joke(joke: dict):
@@ -80,7 +81,7 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.effective_user
     assert update.effective_chat
 
-    joke = await most_rated_joke(not_viewed_by_user_id=update.effective_user.id)
+    joke = await thompson_sampled_joke(for_user_id=update.effective_user.id)
 
     if joke is None:
         await update.message.reply_text(
@@ -273,43 +274,43 @@ async def random_joke(constraints: list[dict] = []):
         return None
 
 
-async def most_rated_joke(not_viewed_by_user_id: Optional[int]):
-    views = (
-        await db["joke_views"].find({"user_id": not_viewed_by_user_id}).to_list(None)
-    )
+async def thompson_sampled_joke(for_user_id: int) -> dict | None:
+    views = await db["joke_views"].find({"user_id": for_user_id}).to_list(None)
 
-    try:
-        joke_id = (
-            await db["jokes"]
-            .aggregate(
-                [
-                    {
-                        "$match": {
-                            "accepted": True,
-                            "_id": {
-                                "$nin": [ObjectId(view["joke_id"]) for view in views]
-                            },
-                        }
-                    },
-                    {
-                        "$lookup": {
-                            "from": "joke_views",
-                            "localField": "_id",
-                            "foreignField": "joke_id",
-                            "as": "views",
-                        },
-                    },
-                    {"$unwind": {"path": "$views", "preserveNullAndEmptyArrays": True}},
-                    {"$set": {"views.score": {"$ifNull": ["$views.score", 3]}}},
-                    {"$group": {"_id": "$_id", "avg_score": {"$avg": "$views.score"}}},
-                    {"$sort": {"avg_score": -1}},
-                ]
-            )
-            .next()
-        )["_id"]
-        return await db["jokes"].find_one({"_id": joke_id})
-    except StopAsyncIteration:
+    pipeline = [
+        {
+            "$match": {
+                "accepted": True,
+                "_id": {"$nin": [view["joke_id"] for view in views]},
+            }
+        },
+        {
+            "$lookup": {
+                "from": "joke_views",
+                "localField": "_id",
+                "foreignField": "joke_id",
+                "as": "views",
+            }
+        },
+        {"$unwind": {"path": "$views", "preserveNullAndEmptyArrays": True}},
+    ]
+
+    results = await db.jokes.aggregate(pipeline).to_list(None)
+
+    if len(results) == 0:
         return None
+
+    jokes = list(set([result["_id"] for result in results]))
+    joke_index = {joke_id: i for i, joke_id in enumerate(jokes)}
+
+    n_arms = len(jokes)
+    thompson = ThompsonSampling(n_arms)
+    for result in results:
+        thompson.update(
+            joke_index[result["_id"]], result.get("views", {}).get("score", 3) or 3
+        )
+
+    return await db["jokes"].find_one({"_id": jokes[thompson.select_arm()]})
 
 
 @log_activity("inlinequery")
