@@ -26,6 +26,7 @@ def validate_nickname(nickname: str):
         raise InvalidNicknameError(
             nickname, "طول اسمت نمیتونه بیشتر از ۲۰ کاراکتر باشه"
         )
+    return nickname
 
 
 @not_authenticated
