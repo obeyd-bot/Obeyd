@@ -3,6 +3,11 @@ import os
 from flask import Flask
 from flask_admin import Admin
 from flask_admin.contrib.pymongo import ModelView
+from flask_admin.contrib.pymongo.filters import (
+    BooleanEqualFilter,
+    FilterLike,
+    FilterEqual,
+)
 from pymongo import MongoClient
 from wtforms import fields, form
 
@@ -31,8 +36,14 @@ class UserView(ModelView):
         "nickname",
         "joined_at",
     )
-    column_editable_list = ["user_name", "user_fullname", "nickname"]
-    column_searchable_list = ["user_id", "user_name", "user_fullname", "nickname"]
+    column_filters = [
+        FilterEqual("user_id", "User ID"),
+        FilterLike("user_name", "User Name"),
+        FilterLike("user_fullname", "User Full Name"),
+        FilterLike("nickname", "Nickname"),
+    ]
+    column_sortable_list = ["joined_at"]
+    column_default_sort = ("joined_at", True)
     form = UserForm
 
 
@@ -54,9 +65,14 @@ class JokeView(ModelView):
         "creator_nickname",
         "created_at",
     )
-    column_filters = ["kind", "accepted"]
-    column_searchable_list = ["creator_id", "creator_nickname"]
-    column_editable_list = ["text", "accepted", "creator_nickname"]
+    column_filters = [
+        FilterEqual("kind", "Kind"),
+        FilterLike("text", "Text"),
+        FilterLike("creator_nickname", "Creator Nickname"),
+        BooleanEqualFilter("accepted", "Accepted"),
+    ]
+    column_sortable_list = ["created_at"]
+    column_default_sort = ("created_at", True)
     form = JokeForm
 
 
@@ -76,9 +92,13 @@ class JokeViewView(ModelView):
         "viewed_at",
         "scored_at",
     )
-    column_filters = ["score"]
-    column_searchable_list = ["user_id", "joke_id"]
-    column_editable_list = ["score"]
+    column_filters = [
+        FilterEqual("user_id", "User ID"),
+        FilterEqual("joke_id", "Joke ID"),
+        FilterEqual("score", "Score"),
+    ]
+    column_sortable_list = ["score", "viewed_at", "scored_at"]
+    column_default_sort = ("score", True)
     form = JokeViewForm
 
 
