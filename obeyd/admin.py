@@ -31,6 +31,8 @@ class UserView(ModelView):
         "nickname",
         "joined_at",
     )
+    column_editable_list = ["user_name", "user_fullname", "nickname"]
+    column_searchable_list = ["user_id", "user_name", "user_fullname", "nickname"]
     form = UserForm
 
 
@@ -52,6 +54,9 @@ class JokeView(ModelView):
         "creator_nickname",
         "created_at",
     )
+    column_filters = ["kind", "accepted"]
+    column_searchable_list = ["creator_id", "creator_nickname"]
+    column_editable_list = ["text", "accepted", "creator_nickname"]
     form = JokeForm
 
 
@@ -71,6 +76,9 @@ class JokeViewView(ModelView):
         "viewed_at",
         "scored_at",
     )
+    column_filters = ["score"]
+    column_searchable_list = ["user_id", "joke_id"]
+    column_editable_list = ["score"]
     form = JokeViewForm
 
 
