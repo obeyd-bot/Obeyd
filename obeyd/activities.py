@@ -20,6 +20,11 @@ async def log_activity_custom(
                 if update.effective_user is not None
                 else None
             ),
+            "chat_type": (
+                update.effective_chat.type
+                if update.effective_chat is not None
+                else None
+            ),
             "chat_id": (
                 update.effective_chat.id if update.effective_chat is not None else None
             ),

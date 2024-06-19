@@ -102,10 +102,45 @@ class JokeViewView(ModelView):
     form = JokeViewForm
 
 
+class ActivityForm(form.Form):
+    kind = fields.StringField()
+    user_id = fields.IntegerField()
+    user_name = fields.StringField()
+    chat_type = fields.StringField()
+    chat_id = fields.IntegerField()
+    chat_name = fields.StringField()
+    created_at = fields.DateTimeField()
+
+
+class ActivityView(ModelView):
+    column_list = (
+        "kind",
+        "user_id",
+        "user_name",
+        "chat_type",
+        "chat_id",
+        "chat_name",
+        "data",
+        "created_at",
+    )
+    column_filters = [
+        FilterEqual("kind", "Kind"),
+        FilterEqual("user_id", "User ID"),
+        FilterLike("user_name", "User Name"),
+        FilterEqual("chat_type", "Chat Type"),
+        FilterEqual("chat_id", "Chat ID"),
+        FilterLike("chat_name", "Chat Name"),
+    ]
+    column_sortable_list = ["created_at"]
+    column_default_sort = ("created_at", True)
+    form = ActivityForm
+
+
 if __name__ == "__main__":
     admin = Admin(app, url="/")
     admin.add_view(UserView(db["users"]))
     admin.add_view(JokeView(db["jokes"]))
     admin.add_view(JokeViewView(db["joke_views"]))
+    admin.add_view(ActivityView(db["activities"]))
 
     app.run(host="0.0.0.0", port=5000, debug=True)
