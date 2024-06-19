@@ -343,6 +343,7 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                 input_message_content=InputTextMessageContent(
                     message_text=format_text_joke(joke)
                 ),
+                reply_markup=score_inline_keyboard_markup(joke),
             )
         ],
         is_personal=True,
