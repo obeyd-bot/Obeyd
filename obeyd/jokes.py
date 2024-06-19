@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 from uuid import uuid4
 
 from bson import ObjectId
@@ -15,7 +14,7 @@ from telegram import (
 )
 from telegram.ext import ContextTypes, ConversationHandler
 
-from obeyd.config import REVIEW_JOKES_CHAT_ID, SCORES, VOICES_BASE_DIR
+from obeyd.config import FILES_BASE_DIR, REVIEW_JOKES_CHAT_ID, SCORES
 from obeyd.db import db
 from obeyd.middlewares import authenticated, log_activity
 from obeyd.thompson import ThompsonSampling
@@ -34,18 +33,33 @@ async def send_joke(
     if joke["kind"] == "text":
         await context.bot.send_message(
             chat_id=chat_id,
-            text=f"{format_text_joke(joke)}",
+            text=format_text_joke(joke),
             **kwargs,
         )
     elif joke["kind"] == "voice":
         await context.bot.send_voice(
             chat_id=chat_id,
-            voice=Path(f"{VOICES_BASE_DIR}/{joke['voice_file_id']}.bin"),
-            caption=f"<b>{joke['creator_nickname']}</b>",
+            voice=Path(f"{FILES_BASE_DIR}/{joke['file_id']}.bin"),
+            caption=format_text_joke(joke),
+            **kwargs,
+        )
+    elif joke["kind"] == "video_note":
+        await context.bot.send_video_note(
+            chat_id=chat_id,
+            video_note=Path(f"{FILES_BASE_DIR}/{joke['file_id']}.bin"),
+            **kwargs,
+        )
+    elif joke["kind"] == "photo":
+        await context.bot.send_photo(
+            chat_id=chat_id,
+            photo=Path(f"{FILES_BASE_DIR}/{joke['file_id']}.bin"),
+            caption=format_text_joke(joke),
             **kwargs,
         )
     else:
-        raise Exception("expected 'kind' to be one of 'text' or 'voice'")
+        raise Exception(
+            "expected 'kind' to be one of 'text' or 'voice' or 'video_note' or 'photo'"
+        )
 
 
 def score_inline_keyboard_markup(joke: dict):
@@ -72,7 +86,8 @@ async def send_joke_to_chat(
     await send_joke(joke, chat_id, context, common)
 
 
-NEWJOKE_STATES_TEXT = 1
+NEWJOKE_STATES_JOKE = 1
+NEWJOKE_STATES_JOKE_TEXT = 2
 
 
 @log_activity("joke")
@@ -126,7 +141,7 @@ async def newjoke_handler(
         ),
     )
 
-    return NEWJOKE_STATES_TEXT
+    return NEWJOKE_STATES_JOKE
 
 
 @authenticated
@@ -137,27 +152,51 @@ async def newjoke_handler_joke(
     assert update.effective_user
     assert context.job_queue
 
-    if update.message.voice is not None:
-        file = await update.message.voice.get_file()
-        file_id = str(uuid4())
-        await file.download_to_drive(custom_path=f"{VOICES_BASE_DIR}/{file_id}.bin")
-        joke = {"kind": "voice", "voice_file_id": file_id}
-    else:
-        joke = {"kind": "text", "text": update.message.text}
-
     joke = {
-        **joke,
         "creator_id": user["user_id"],
         "creator_nickname": user["nickname"],
         "created_at": datetime.now(tz=timezone.utc),
     }
-    await db["jokes"].insert_one(joke)
 
-    context.job_queue.run_once(
-        callback=newjoke_callback_notify_admin,
-        when=0,
-        data=joke,
+    if update.message.voice is not None:
+        file = await update.message.voice.get_file()
+        file_id = str(uuid4())
+        await file.download_to_drive(custom_path=f"{FILES_BASE_DIR}/{file_id}.bin")
+        joke.update({"kind": "voice", "file_id": file_id})
+        context.user_data["joke"] = joke # type: ignore
+        await update.message.reply_text(
+            "😂👍 میتونی توضیح کوتاهی هم در مورد وویسی که فرستادی بدی"
+        )
+        return NEWJOKE_STATES_JOKE_TEXT
+    elif update.message.video_note is not None:
+        file = await update.message.video_note.get_file()
+        file_id = str(uuid4())
+        await file.download_to_drive(custom_path=f"{FILES_BASE_DIR}/{file_id}.bin")
+        joke.update({"kind": "video_note", "file_id": file_id})
+        context.user_data["joke"] = joke # type: ignore
+        await update.message.reply_text(
+            "😂👍 میتونی توضیح کوتاهی هم در مورد ویدیو مسیجی که فرستادی بدی"
+        )
+        return NEWJOKE_STATES_JOKE_TEXT
+    elif update.message.photo is not None:
+        file = await update.message.photo[-1].get_file()
+        file_id = str(uuid4())
+        await file.download_to_drive(custom_path=f"{FILES_BASE_DIR}/{file_id}.bin")
+        joke.update({"kind": "photo", "file_id": file_id})
+        context.user_data["joke"] = joke # type: ignore
+        await update.message.reply_text(
+            "😂👍 میتونی توضیح کوتاهی هم در مورد عکسی که فرستادی بدی"
+        )
+        return NEWJOKE_STATES_JOKE_TEXT
+
+    joke.update(
+        {
+            "kind": "text",
+            "text": update.message.text,
+        }
     )
+
+    await db["jokes"].insert_one(joke)
 
     await update.message.reply_text(
         "😂👍",
@@ -169,6 +208,47 @@ async def newjoke_handler_joke(
             one_time_keyboard=True,
             resize_keyboard=True,
         ),
+    )  # type: ignore
+
+    context.job_queue.run_once(
+        callback=newjoke_callback_notify_admin,
+        when=0,
+        data=joke,
+    )
+
+    return ConversationHandler.END
+
+
+@authenticated
+async def newjoke_handler_joke_text(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict
+):
+    assert update.message
+    assert context.user_data
+    assert context.job_queue
+
+    joke = context.user_data.pop("joke")
+    assert joke is not None
+    joke["text"] = update.message.text
+
+    await db["jokes"].insert_one(joke)
+
+    await update.message.reply_text(
+        "😂👍",
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[
+                [KeyboardButton(text="/joke")],
+                [KeyboardButton(text="/newjoke")],
+            ],
+            one_time_keyboard=True,
+            resize_keyboard=True,
+        ),
+    )
+
+    context.job_queue.run_once(
+        callback=newjoke_callback_notify_admin,
+        when=0,
+        data=joke,
     )
 
     return ConversationHandler.END
@@ -219,13 +299,18 @@ async def update_joke_sent_to_admin(joke: dict, update: Update, accepted: bool):
             text=f"{format_text_joke(joke)}\n\n{info_msg}",
             reply_markup=joke_review_inline_keyboard_markup(joke),
         )
-    elif joke["kind"] == "voice":
+    elif joke["kind"] in ["voice", "photo"]:
         await update.callback_query.edit_message_caption(
-            caption=f"<b>{joke['creator_nickname']}</b>\n\n{info_msg}",
+            caption=f"{format_text_joke(joke)}\n\n{info_msg}",
             reply_markup=joke_review_inline_keyboard_markup(joke),
         )
+    elif joke["kind"] == "video_note":
+        # video notes do not have caption, we can't edit the message
+        pass
     else:
-        raise Exception("expected 'kind' to be one of 'text' or 'voice'")
+        raise Exception(
+            "expected 'kind' to be one of 'text' or 'voice' or 'video_note' or 'photo'"
+        )
 
 
 @log_activity("reviewjoke")

@@ -47,4 +47,4 @@ RECURRING_INTERVALS = {
 }
 
 
-VOICES_BASE_DIR = os.environ.get("OBEYD_VOICES_BASE_DIR", "files/voices")
+FILES_BASE_DIR = os.environ.get("OBEYD_FILES_BASE_DIR", "files")

@@ -20,11 +20,13 @@ from telegram.ext import (
 
 from obeyd.db import db
 from obeyd.jokes import (
-    NEWJOKE_STATES_TEXT,
+    NEWJOKE_STATES_JOKE,
+    NEWJOKE_STATES_JOKE_TEXT,
     inline_query_handler,
     joke_handler,
     newjoke_handler,
     newjoke_handler_joke,
+    newjoke_handler_joke_text,
     reviewjoke_callback_query_handler,
 )
 from obeyd.middlewares import log_activity
@@ -160,11 +162,16 @@ if __name__ == "__main__":
         ConversationHandler(
             entry_points=[CommandHandler("newjoke", newjoke_handler)],  # type: ignore
             states={
-                NEWJOKE_STATES_TEXT: [
+                NEWJOKE_STATES_JOKE: [
                     MessageHandler(
-                        (filters.TEXT | filters.VOICE) & ~filters.COMMAND, newjoke_handler_joke  # type: ignore
+                        (filters.TEXT | filters.VOICE | filters.VIDEO_NOTE | filters.PHOTO) & ~filters.COMMAND, newjoke_handler_joke  # type: ignore
                     )
-                ]
+                ],
+                NEWJOKE_STATES_JOKE_TEXT: [
+                    MessageHandler(
+                        filters.TEXT & ~filters.COMMAND, newjoke_handler_joke_text  # type: ignore
+                    )
+                ],
             },  # type: ignore
             fallbacks=[CommandHandler("cancel", cancel_handler)],
         )

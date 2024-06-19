@@ -50,7 +50,7 @@ class UserView(ModelView):
 class JokeForm(form.Form):
     kind = fields.StringField()
     text = fields.StringField()
-    voice_file_id = fields.StringField()
+    file_id = fields.StringField()
     accepted = fields.BooleanField()
     creator_nickname = fields.StringField()
 
@@ -59,7 +59,7 @@ class JokeView(ModelView):
     column_list = (
         "kind",
         "text",
-        "voice_file_id",
+        "file_id",
         "accepted",
         "creator_id",
         "creator_nickname",
@@ -79,7 +79,7 @@ class JokeView(ModelView):
 class JokeViewForm(form.Form):
     kind = fields.StringField()
     text = fields.StringField()
-    voice_file_id = fields.StringField()
+    file_id = fields.StringField()
     accepted = fields.BooleanField()
     creator_nickname = fields.StringField()
 
