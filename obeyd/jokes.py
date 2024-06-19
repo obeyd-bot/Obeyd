@@ -163,7 +163,7 @@ async def newjoke_handler_joke(
         file_id = str(uuid4())
         await file.download_to_drive(custom_path=f"{FILES_BASE_DIR}/{file_id}.bin")
         joke.update({"kind": "voice", "file_id": file_id})
-        context.user_data["joke"] = joke # type: ignore
+        context.user_data["joke"] = joke  # type: ignore
         await update.message.reply_text(
             "😂👍 میتونی توضیح کوتاهی هم در مورد وویسی که فرستادی بدی"
         )
@@ -173,17 +173,17 @@ async def newjoke_handler_joke(
         file_id = str(uuid4())
         await file.download_to_drive(custom_path=f"{FILES_BASE_DIR}/{file_id}.bin")
         joke.update({"kind": "video_note", "file_id": file_id})
-        context.user_data["joke"] = joke # type: ignore
+        context.user_data["joke"] = joke  # type: ignore
         await update.message.reply_text(
             "😂👍 میتونی توضیح کوتاهی هم در مورد ویدیو مسیجی که فرستادی بدی"
         )
         return NEWJOKE_STATES_JOKE_TEXT
-    elif update.message.photo is not None:
+    elif len(update.message.photo) > 0:
         file = await update.message.photo[-1].get_file()
         file_id = str(uuid4())
         await file.download_to_drive(custom_path=f"{FILES_BASE_DIR}/{file_id}.bin")
         joke.update({"kind": "photo", "file_id": file_id})
-        context.user_data["joke"] = joke # type: ignore
+        context.user_data["joke"] = joke  # type: ignore
         await update.message.reply_text(
             "😂👍 میتونی توضیح کوتاهی هم در مورد عکسی که فرستادی بدی"
         )
@@ -208,7 +208,7 @@ async def newjoke_handler_joke(
             one_time_keyboard=True,
             resize_keyboard=True,
         ),
-    )  # type: ignore
+    )
 
     context.job_queue.run_once(
         callback=newjoke_callback_notify_admin,
