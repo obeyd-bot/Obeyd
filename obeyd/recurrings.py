@@ -6,7 +6,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 
 from obeyd.config import RECURRING_INTERVALS
 from obeyd.db import db
-from obeyd.jokes import random_joke, send_joke_to_chat, thompson_sampled_joke
+from obeyd.jokes import send_joke_to_chat, thompson_sampled_joke
 from obeyd.middlewares import log_activity
 
 SETRECURRING_STATES_INTERVAL = 1

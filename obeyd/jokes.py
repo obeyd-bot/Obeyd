@@ -297,12 +297,10 @@ async def update_joke_sent_to_admin(joke: dict, update: Update, accepted: bool):
     if joke["kind"] == "text":
         await update.callback_query.edit_message_text(
             text=f"{format_text_joke(joke)}\n\n{info_msg}",
-            reply_markup=joke_review_inline_keyboard_markup(joke),
         )
     elif joke["kind"] in ["voice", "photo"]:
         await update.callback_query.edit_message_caption(
             caption=f"{format_text_joke(joke)}\n\n{info_msg}",
-            reply_markup=joke_review_inline_keyboard_markup(joke),
         )
     elif joke["kind"] == "video_note":
         # video notes do not have caption, we can't edit the message
@@ -320,8 +318,11 @@ async def reviewjoke_callback_query_handler(
     assert update.callback_query
     assert update.effective_user
     assert isinstance(update.callback_query.data, str)
+    assert context.job_queue
 
     _, joke_id, action = tuple(update.callback_query.data.split(":"))
+    joke_id = ObjectId(joke_id)
+
     accepted = None
     if action == "accept":
         accepted = True
@@ -330,31 +331,32 @@ async def reviewjoke_callback_query_handler(
     else:
         raise Exception("expected accept or reject")
 
-    await db["jokes"].update_one(
-        {"_id": ObjectId(joke_id)}, {"$set": {"accepted": accepted}}
-    )
+    await db["jokes"].update_one({"_id": joke_id}, {"$set": {"accepted": accepted}})
 
-    joke = await db["jokes"].find_one({"_id": ObjectId(joke_id)})
+    joke = await db["jokes"].find_one({"_id": joke_id})
     assert joke is not None
 
     if accepted:
         await update.callback_query.answer("تایید شد")
     else:
         await update.callback_query.answer("رد شد")
+
+    context.job_queue.run_once(reviewjoke_callback_notify_creator, when=0, data=joke)
+
     await update_joke_sent_to_admin(joke, update, accepted=accepted)
 
 
-async def random_joke(constraints: list[dict] = []):
-    try:
-        return (
-            await db["jokes"]
-            .aggregate(
-                [{"$match": {"accepted": True}}, {"$sample": {"size": 1}}, *constraints]
-            )
-            .next()
-        )
-    except StopAsyncIteration:
-        return None
+async def reviewjoke_callback_notify_creator(context: ContextTypes.DEFAULT_TYPE):
+    assert context.job
+
+    joke = context.job.data
+    assert isinstance(joke, dict)
+
+    msg = "جوکت تایید شد 😁" if joke["accepted"] else "جوکت رد شد 😿"
+
+    await context.bot.send_message(
+        chat_id=joke["creator_id"], text=f"{msg}\n\n{format_text_joke(joke)}"
+    )
 
 
 async def thompson_sampled_joke(for_user_id: int | None) -> dict | None:
