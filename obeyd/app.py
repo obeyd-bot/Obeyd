@@ -1,8 +1,6 @@
 import logging
 import os
-from datetime import datetime, time, timedelta, timezone
 
-import pytz
 import sentry_sdk
 from telegram import KeyboardButton, ReplyKeyboardMarkup, Update
 from telegram.constants import ParseMode
@@ -25,7 +23,6 @@ from obeyd.broadcast import (
     broadcast_handler_confirm,
     broadcast_handler_text,
 )
-from obeyd.db import db
 from obeyd.jokes import (
     NEWJOKE_STATES_JOKE,
     NEWJOKE_STATES_JOKE_TEXT,
@@ -75,28 +72,6 @@ async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     return ConversationHandler.END
-
-
-async def notify_inactive_users_callback(context: ContextTypes.DEFAULT_TYPE):
-    current_time = datetime.now(tz=timezone.utc)
-
-    inactive_users = db["activities"].aggregate(
-        [
-            {"$group": {"_id": "$user_id", "last_activity": {"$max": "$created_at"}}},
-            {"$match": {"last_activity": {"$lt": current_time - timedelta(days=1)}}},
-        ]
-    )
-
-    async for user in inactive_users:
-        await context.bot.send_message(
-            chat_id=user["_id"],
-            text=f"یک جوک بگم؟",
-            reply_markup=ReplyKeyboardMarkup(
-                keyboard=[[KeyboardButton(text="/joke")]],
-                one_time_keyboard=True,
-                resize_keyboard=True,
-            ),
-        )
 
 
 if __name__ == "__main__":
@@ -150,7 +125,7 @@ if __name__ == "__main__":
         )
     )
     app.add_handler(CommandHandler("getname", getname_handler))  # type: ignore
-    app.add_handler(CommandHandler("joke", joke_handler))
+    app.add_handler(CommandHandler("joke", joke_handler))  # type: ignore
     app.add_handler(
         CallbackQueryHandler(scorejoke_callback_query_handler, pattern="^scorejoke")
     )
@@ -186,7 +161,7 @@ if __name__ == "__main__":
             fallbacks=[CommandHandler("cancel", cancel_handler)],
         )
     )
-    app.add_handler(InlineQueryHandler(inline_query_handler)) # type: ignore
+    app.add_handler(InlineQueryHandler(inline_query_handler))  # type: ignore
 
     # admin handlers
     app.add_handler(
@@ -206,15 +181,9 @@ if __name__ == "__main__":
                         filters.TEXT & ~filters.COMMAND, broadcast_handler_confirm
                     )
                 ],
-            },
+            },  # type: ignore
             fallbacks=[CommandHandler("cancel", cancel_handler)],
         )
-    )
-
-    # jobs
-    job_queue.run_daily(
-        callback=notify_inactive_users_callback,
-        time=time(hour=20, tzinfo=pytz.timezone("Asia/Tehran")),
     )
 
     job_queue.run_once(schedule_recurrings, when=0)
