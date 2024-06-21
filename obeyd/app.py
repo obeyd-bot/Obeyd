@@ -18,6 +18,13 @@ from telegram.ext import (
     filters,
 )
 
+from obeyd.broadcast import (
+    BROADCAST_CONFIRM,
+    BROADCAST_TEXT,
+    broadcast_handler,
+    broadcast_handler_confirm,
+    broadcast_handler_text,
+)
 from obeyd.db import db
 from obeyd.jokes import (
     NEWJOKE_STATES_JOKE,
@@ -144,7 +151,9 @@ if __name__ == "__main__":
     )
     app.add_handler(CommandHandler("getname", getname_handler))  # type: ignore
     app.add_handler(CommandHandler("joke", joke_handler))
-    app.add_handler(CommandHandler("deleterecurring", deleterecurring_handler))
+    app.add_handler(
+        CallbackQueryHandler(scorejoke_callback_query_handler, pattern="^scorejoke")
+    )
     app.add_handler(
         ConversationHandler(
             entry_points=[CommandHandler("setrecurring", setrecurring_handler)],
@@ -158,6 +167,7 @@ if __name__ == "__main__":
             fallbacks=[CommandHandler("cancel", cancel_handler)],
         )
     )
+    app.add_handler(CommandHandler("deleterecurring", deleterecurring_handler))
     app.add_handler(
         ConversationHandler(
             entry_points=[CommandHandler("newjoke", newjoke_handler)],  # type: ignore
@@ -176,13 +186,30 @@ if __name__ == "__main__":
             fallbacks=[CommandHandler("cancel", cancel_handler)],
         )
     )
-    app.add_handler(
-        CallbackQueryHandler(scorejoke_callback_query_handler, pattern="^scorejoke")
-    )
+    app.add_handler(InlineQueryHandler(inline_query_handler)) # type: ignore
+
+    # admin handlers
     app.add_handler(
         CallbackQueryHandler(reviewjoke_callback_query_handler, pattern="^reviewjoke")
     )
-    app.add_handler(InlineQueryHandler(inline_query_handler))
+    app.add_handler(
+        ConversationHandler(
+            entry_points=[CommandHandler("broadcast", broadcast_handler)],
+            states={
+                BROADCAST_TEXT: [
+                    MessageHandler(
+                        filters.TEXT & ~filters.COMMAND, broadcast_handler_text
+                    )
+                ],
+                BROADCAST_CONFIRM: [
+                    MessageHandler(
+                        filters.TEXT & ~filters.COMMAND, broadcast_handler_confirm
+                    )
+                ],
+            },
+            fallbacks=[CommandHandler("cancel", cancel_handler)],
+        )
+    )
 
     # jobs
     job_queue.run_daily(

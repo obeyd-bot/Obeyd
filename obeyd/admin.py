@@ -25,6 +25,7 @@ class UserForm(form.Form):
     user_name = fields.StringField()
     user_fullname = fields.StringField()
     nickname = fields.StringField()
+    is_admin = fields.BooleanField()
     joined_at = fields.DateTimeField()
 
 
@@ -34,6 +35,7 @@ class UserView(ModelView):
         "user_name",
         "user_fullname",
         "nickname",
+        "is_admin",
         "joined_at",
     )
     column_filters = [
@@ -41,6 +43,7 @@ class UserView(ModelView):
         FilterLike("user_name", "User Name"),
         FilterLike("user_fullname", "User Full Name"),
         FilterLike("nickname", "Nickname"),
+        BooleanEqualFilter("is_admin", "Is Admin"),
     ]
     column_sortable_list = ["joined_at"]
     column_default_sort = ("joined_at", True)

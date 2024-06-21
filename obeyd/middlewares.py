@@ -66,3 +66,21 @@ def authenticated(f):
         return await f(update, context, user=user)
 
     return g
+
+
+def admin_only(f):
+    @wraps(f)
+    async def g(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        assert update.effective_user
+
+        admins = db["users"].find({"is_admin": True})
+        admins = [admin["user_id"] async for admin in admins]
+
+        if update.effective_user.id not in admins:
+            if update.message:
+                await update.message.reply_text("شما ادمین نیستید 😢")
+            return
+
+        return await f(update, context)
+
+    return g

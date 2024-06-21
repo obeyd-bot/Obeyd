@@ -16,7 +16,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 
 from obeyd.config import FILES_BASE_DIR, REVIEW_JOKES_CHAT_ID, SCORES
 from obeyd.db import db
-from obeyd.middlewares import authenticated, log_activity
+from obeyd.middlewares import admin_only, authenticated, log_activity
 from obeyd.thompson import ThompsonSampling
 
 
@@ -311,6 +311,7 @@ async def update_joke_sent_to_admin(joke: dict, update: Update, accepted: bool):
         )
 
 
+@admin_only
 @log_activity("reviewjoke")
 async def reviewjoke_callback_query_handler(
     update: Update, context: ContextTypes.DEFAULT_TYPE
