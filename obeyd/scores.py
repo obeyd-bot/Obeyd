@@ -62,10 +62,9 @@ async def scorejoke_callback_notify_creator(context: ContextTypes.DEFAULT_TYPE):
     joke = await db["jokes"].find_one({"_id": ObjectId(joke_score["joke_id"])})
     scored_by_user = await db["users"].find_one({"user_id": joke_score["user_id"]})
     assert joke
-    assert scored_by_user
 
     msg = SCORES[joke_score["score"]]["score_notif"].format(
-        s=scored_by_user["nickname"]
+        s=scored_by_user["nickname"] if scored_by_user is not None else "یک رعیت"
     )
 
     if joke["kind"] == "text":
