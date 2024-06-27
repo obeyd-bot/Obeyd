@@ -77,8 +77,11 @@ def admin_only(f):
         admins = [admin["user_id"] async for admin in admins]
 
         if update.effective_user.id not in admins:
+            msg = "شما ادمین نیستید 😢"
             if update.message:
-                await update.message.reply_text("شما ادمین نیستید 😢")
+                await update.message.reply_text(text=msg)
+            elif update.callback_query:
+                await update.callback_query.answer(text=msg, show_alert=True)
             return
 
         return await f(update, context)
