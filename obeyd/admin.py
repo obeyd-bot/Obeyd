@@ -55,6 +55,7 @@ class JokeForm(form.Form):
     text = fields.StringField()
     file_id = fields.StringField()
     accepted = fields.BooleanField()
+    visible = fields.BooleanField()
     creator_nickname = fields.StringField()
 
 
@@ -64,6 +65,7 @@ class JokeView(ModelView):
         "text",
         "file_id",
         "accepted",
+        "visible",
         "creator_id",
         "creator_nickname",
         "created_at",
@@ -73,6 +75,7 @@ class JokeView(ModelView):
         FilterLike("text", "Text"),
         FilterLike("creator_nickname", "Creator Nickname"),
         BooleanEqualFilter("accepted", "Accepted"),
+        BooleanEqualFilter("visible", "Visible"),
     ]
     column_sortable_list = ["created_at"]
     column_default_sort = ("created_at", True)

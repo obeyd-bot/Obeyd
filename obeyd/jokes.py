@@ -155,6 +155,8 @@ async def newjoke_handler_joke(
     joke = {
         "creator_id": user["user_id"],
         "creator_nickname": user["nickname"],
+        "accepted": False,
+        "visible": False,
         "created_at": datetime.now(tz=timezone.utc),
     }
 
@@ -332,7 +334,7 @@ async def reviewjoke_callback_query_handler(
     else:
         raise Exception("expected accept or reject")
 
-    await db["jokes"].update_one({"_id": joke_id}, {"$set": {"accepted": accepted}})
+    await db["jokes"].update_one({"_id": joke_id}, {"$set": {"accepted": accepted, "visible": accepted}})
 
     joke = await db["jokes"].find_one({"_id": joke_id})
     assert joke is not None
@@ -366,7 +368,7 @@ async def thompson_sampled_joke(for_user_id: int | None) -> dict | None:
     pipeline = [
         {
             "$match": {
-                "accepted": True,
+                "visible": True,
                 "_id": {"$nin": [view["joke_id"] for view in views]},
             }
         },
