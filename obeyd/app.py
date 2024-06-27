@@ -23,25 +23,25 @@ from obeyd.broadcast import (
     broadcast_handler_confirm,
     broadcast_handler_text,
 )
-from obeyd.jokes import (
+from obeyd.jokes.inline import inline_query_handler
+from obeyd.jokes.joke import joke_handler
+from obeyd.jokes.new import (
     NEWJOKE_STATES_JOKE,
     NEWJOKE_STATES_JOKE_TEXT,
-    inline_query_handler,
-    joke_handler,
     newjoke_handler,
     newjoke_handler_joke,
     newjoke_handler_joke_text,
-    reviewjoke_callback_query_handler,
 )
-from obeyd.middlewares import log_activity
-from obeyd.recurrings import (
+from obeyd.jokes.recurrings import (
     SETRECURRING_STATES_INTERVAL,
     deleterecurring_handler,
     schedule_recurrings,
     setrecurring_handler,
     setrecurring_handler_interval,
 )
-from obeyd.scores import scorejoke_callback_query_handler
+from obeyd.jokes.review import reviewjoke_callback_query_handler
+from obeyd.jokes.score import scorejoke_callback_query_handler
+from obeyd.middlewares import log_activity
 from obeyd.users import (
     SETNAME_STATES_NAME,
     START_STATES_NAME,

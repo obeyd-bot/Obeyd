@@ -6,8 +6,32 @@ from telegram.ext import ContextTypes
 
 from obeyd.config import SCORES
 from obeyd.db import db
-from obeyd.jokes import format_text_joke
+from obeyd.jokes.functions import format_text_joke
 from obeyd.middlewares import log_activity
+
+
+async def scorejoke_callback_notify_creator(context: ContextTypes.DEFAULT_TYPE):
+    assert context.job
+    assert isinstance(context.job.data, dict)
+
+    joke_score = context.job.data
+
+    joke = await db["jokes"].find_one({"_id": ObjectId(joke_score["joke_id"])})
+    scored_by_user = await db["users"].find_one({"user_id": joke_score["user_id"]})
+    assert joke
+
+    scored_by_user_nickname = None
+    if scored_by_user is not None and scored_by_user.get("nickname") is not None:
+        scored_by_user_nickname = scored_by_user["nickname"]
+
+    msg = SCORES[joke_score["score"]]["score_notif"].format(
+        s=scored_by_user_nickname if scored_by_user_nickname is not None else "ناشناسی"
+    )
+
+    if joke["kind"] == "text":
+        msg += f"\n\n{format_text_joke(joke)}"
+
+    await context.bot.send_message(chat_id=joke["creator_id"], text=msg)
 
 
 @log_activity("scorejoke")
@@ -51,27 +75,3 @@ async def scorejoke_callback_query_handler(
         when=0,
         data=joke_score,
     )
-
-
-async def scorejoke_callback_notify_creator(context: ContextTypes.DEFAULT_TYPE):
-    assert context.job
-    assert isinstance(context.job.data, dict)
-
-    joke_score = context.job.data
-
-    joke = await db["jokes"].find_one({"_id": ObjectId(joke_score["joke_id"])})
-    scored_by_user = await db["users"].find_one({"user_id": joke_score["user_id"]})
-    assert joke
-
-    scored_by_user_nickname = None
-    if scored_by_user is not None and scored_by_user.get("nickname") is not None:
-        scored_by_user_nickname = scored_by_user["nickname"]
-
-    msg = SCORES[joke_score["score"]]["score_notif"].format(
-        s=scored_by_user_nickname if scored_by_user_nickname is not None else "ناشناسی"
-    )
-
-    if joke["kind"] == "text":
-        msg += f"\n\n{format_text_joke(joke)}"
-
-    await context.bot.send_message(chat_id=joke["creator_id"], text=msg)

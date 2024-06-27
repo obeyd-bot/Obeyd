@@ -1,5 +1,6 @@
 import asyncio
 import os
+
 from motor.motor_asyncio import AsyncIOMotorClient
 
 db_uri = os.environ["MONGODB_URI"]

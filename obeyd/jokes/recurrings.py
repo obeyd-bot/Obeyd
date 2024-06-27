@@ -6,7 +6,11 @@ from telegram.ext import ContextTypes, ConversationHandler
 
 from obeyd.config import RECURRING_INTERVALS
 from obeyd.db import db
-from obeyd.jokes import send_joke_to_chat, thompson_sampled_joke
+from obeyd.jokes.functions import (
+    scorejoke_inline_keyboard_markup,
+    select_joke_for,
+    send_joke,
+)
 from obeyd.middlewares import log_activity
 
 SETRECURRING_STATES_INTERVAL = 1
@@ -41,6 +45,7 @@ async def setrecurring_handler_interval(
     assert update.effective_user
 
     chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
     created_by_user_id = update.effective_user.id
     interval = RECURRING_INTERVALS.get(update.message.text.strip())
 
@@ -57,6 +62,7 @@ async def setrecurring_handler_interval(
 
     recurring = {
         "chat_id": chat_id,
+        "chat_type": chat_type,
         "created_by_user_id": created_by_user_id,
         "interval": interval["code"],
         "created_at": datetime.now(tz=timezone.utc),
@@ -65,6 +71,7 @@ async def setrecurring_handler_interval(
         {"chat_id": chat_id},
         {
             "$set": {
+                "chat_type": chat_type,
                 "created_by_user_id": recurring["created_by_user_id"],
                 "interval": recurring["interval"],
             },
@@ -155,7 +162,20 @@ async def recurring_joke_callback(context: ContextTypes.DEFAULT_TYPE):
     recurring = context.job.data
     assert isinstance(recurring, dict)
 
-    joke = await thompson_sampled_joke(for_user_id=None)
-    assert joke is not None
+    chat_id = recurring["chat_id"]
+    chat_type = recurring["chat_type"]
+    created_by_user_id = recurring["created_by_user_id"]
 
-    await send_joke_to_chat(joke, recurring["chat_id"], context)
+    joke = await select_joke_for(
+        user_id=created_by_user_id, chat_id=chat_id, chat_type=chat_type
+    )
+    if joke is None:
+        return
+
+    await send_joke(
+        joke=joke,
+        user_id=created_by_user_id,
+        chat_id=chat_id,
+        context=context,
+        kwargs={"reply_markup": scorejoke_inline_keyboard_markup(joke)},
+    )

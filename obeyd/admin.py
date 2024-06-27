@@ -5,8 +5,8 @@ from flask_admin import Admin
 from flask_admin.contrib.pymongo import ModelView
 from flask_admin.contrib.pymongo.filters import (
     BooleanEqualFilter,
-    FilterLike,
     FilterEqual,
+    FilterLike,
 )
 from pymongo import MongoClient
 from wtforms import fields, form
