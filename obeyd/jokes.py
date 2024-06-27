@@ -338,7 +338,9 @@ async def reviewjoke_callback_query_handler(
     else:
         raise Exception("expected accept or reject")
 
-    await db["jokes"].update_one({"_id": joke_id}, {"$set": {"accepted": accepted, "visible": accepted}})
+    await db["jokes"].update_one(
+        {"_id": joke_id}, {"$set": {"accepted": accepted, "visible": accepted}}
+    )
 
     joke = await db["jokes"].find_one({"_id": joke_id})
     assert joke is not None

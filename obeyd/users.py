@@ -1,10 +1,10 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
+import pytz
 from pymongo.errors import DuplicateKeyError
 from telegram import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import ContextTypes, ConversationHandler
 
-from obeyd.activities import log_activity_custom
 from obeyd.db import db
 from obeyd.middlewares import authenticated, log_activity, not_authenticated
 
@@ -33,70 +33,26 @@ def validate_nickname(nickname: str):
 @log_activity("start")
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     assert update.message
+    assert update.effective_user
+
+    await db["users"].insert_one(
+        {
+            "user_id": update.effective_user.id,
+            "user_name": update.effective_user.username,
+            "user_fullname": update.effective_user.full_name,
+            "nickname": None,
+            "joined_at": datetime.now(tz=pytz.timezone("Asia/Tehran")),
+        },
+    )
 
     await update.message.reply_text(
-        "به به خوش اومدی 😀 میتونی من رو توی هر چتی منشن کنی تا جوک بفرستم 😁 اسمت رو بهم میگی؟",
+        "به به خوش اومدی 😀 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن",
         reply_markup=ReplyKeyboardMarkup(
-            keyboard=[[KeyboardButton(text="/cancel")]],
+            keyboard=[["/joke"]],
             one_time_keyboard=True,
             resize_keyboard=True,
         ),
     )
-
-    return START_STATES_NAME
-
-
-@not_authenticated
-async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    assert update.message
-    assert update.message.text
-    assert update.effective_user
-
-    chosen_nickname = update.message.text
-
-    try:
-        chosen_nickname = validate_nickname(chosen_nickname)
-    except InvalidNicknameError as e:
-        await update.message.reply_text(
-            text=e.reason,
-            reply_markup=ReplyKeyboardMarkup(
-                keyboard=[[KeyboardButton(text="/cancel")]],
-                one_time_keyboard=True,
-                resize_keyboard=True,
-            ),
-        )
-        return START_STATES_NAME
-
-    try:
-        await db["users"].insert_one(
-            {
-                "user_id": update.effective_user.id,
-                "user_name": update.effective_user.username,
-                "user_fullname": update.effective_user.full_name,
-                "nickname": chosen_nickname,
-                "joined_at": datetime.now(tz=timezone.utc),
-            }
-        )
-    except DuplicateKeyError:
-        await log_activity_custom(
-            update, "duplicate_nickname", {"nickname": chosen_nickname}
-        )
-        await update.message.reply_text(
-            text="این اسم رو قبلا یکی استفاده کرده 🙁 یک اسم دیگه انتخاب کن",
-            reply_markup=ReplyKeyboardMarkup(
-                keyboard=[[KeyboardButton(text="/cancel")]],
-                one_time_keyboard=True,
-                resize_keyboard=True,
-            ),
-        )
-        return START_STATES_NAME
-
-    await update.message.reply_text(
-        f"سلام <b>{chosen_nickname}</b> 🫡 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن 🙂",
-        reply_markup=ReplyKeyboardRemove(),
-    )
-
-    return ConversationHandler.END
 
 
 @authenticated

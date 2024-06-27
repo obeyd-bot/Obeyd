@@ -49,7 +49,6 @@ from obeyd.users import (
     setname_handler,
     setname_handler_name,
     start_handler,
-    start_handler_name,
 )
 
 
@@ -99,17 +98,7 @@ if __name__ == "__main__":
     job_queue = app.job_queue
     assert job_queue
 
-    app.add_handler(
-        ConversationHandler(
-            entry_points=[CommandHandler("start", start_handler)],
-            states={
-                START_STATES_NAME: [
-                    MessageHandler(filters.TEXT & ~filters.COMMAND, start_handler_name)
-                ]
-            },
-            fallbacks=[CommandHandler("cancel", cancel_handler)],
-        )
-    )
+    app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(
         ConversationHandler(
             entry_points=[CommandHandler("setname", setname_handler)],  # type: ignore
