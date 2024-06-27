@@ -45,7 +45,6 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "user_id": update.effective_user.id,
             "user_name": update.effective_user.username,
             "user_fullname": update.effective_user.full_name,
-            "nickname": None,
             "joined_at": datetime.now(tz=pytz.timezone("Asia/Tehran")),
         },
     )
