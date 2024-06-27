@@ -64,7 +64,6 @@ async def cancel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[
                 [KeyboardButton(text="/joke")],
-                [KeyboardButton(text="/newjoke")],
             ],
             one_time_keyboard=True,
             resize_keyboard=True,
