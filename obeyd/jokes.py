@@ -17,7 +17,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 
 from obeyd.config import FILES_BASE_DIR, REVIEW_JOKES_CHAT_ID, SCORES
 from obeyd.db import db
-from obeyd.middlewares import admin_only, authenticated, log_activity
+from obeyd.middlewares import admin_only, authenticated, log_activity, user_has_nickname
 from obeyd.thompson import ThompsonSampling
 
 
@@ -63,7 +63,7 @@ async def send_joke(
         )
 
 
-def score_inline_keyboard_markup(joke: dict):
+def scorejoke_inline_keyboard_markup(joke: dict):
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -81,7 +81,7 @@ async def send_joke_to_chat(
     joke: dict, chat_id: str | int, context: ContextTypes.DEFAULT_TYPE
 ):
     common = {
-        "reply_markup": score_inline_keyboard_markup(joke),
+        "reply_markup": scorejoke_inline_keyboard_markup(joke),
     }
 
     await send_joke(joke, chat_id, context, common)
@@ -127,6 +127,7 @@ async def joke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 @authenticated
+@user_has_nickname
 @log_activity("newjoke")
 async def newjoke_handler(
     update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict
@@ -146,6 +147,7 @@ async def newjoke_handler(
 
 
 @authenticated
+@user_has_nickname
 async def newjoke_handler_joke(
     update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict
 ):
@@ -226,6 +228,7 @@ async def newjoke_handler_joke(
 
 
 @authenticated
+@user_has_nickname
 async def newjoke_handler_joke_text(
     update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict
 ):
@@ -260,7 +263,7 @@ async def newjoke_handler_joke_text(
     return ConversationHandler.END
 
 
-def joke_review_inline_keyboard_markup(joke: dict):
+def jokereview_inline_keyboard_markup(joke: dict):
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -279,7 +282,7 @@ def joke_review_inline_keyboard_markup(joke: dict):
 
 async def send_joke_to_admin(joke: dict, context: ContextTypes.DEFAULT_TYPE):
     common = {
-        "reply_markup": joke_review_inline_keyboard_markup(joke),
+        "reply_markup": jokereview_inline_keyboard_markup(joke),
     }
 
     await send_joke(joke, REVIEW_JOKES_CHAT_ID, context, common)
@@ -439,7 +442,7 @@ async def inline_query_handler(update: Update, context: ContextTypes.DEFAULT_TYP
                 input_message_content=InputTextMessageContent(
                     message_text=format_text_joke(joke)
                 ),
-                reply_markup=score_inline_keyboard_markup(joke),
+                reply_markup=scorejoke_inline_keyboard_markup(joke),
             )
         ],
         is_personal=True,

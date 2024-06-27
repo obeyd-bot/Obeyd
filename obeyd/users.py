@@ -6,7 +6,12 @@ from telegram import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, U
 from telegram.ext import ContextTypes, ConversationHandler
 
 from obeyd.db import db
-from obeyd.middlewares import authenticated, log_activity, not_authenticated
+from obeyd.middlewares import (
+    authenticated,
+    log_activity,
+    not_authenticated,
+    user_has_nickname,
+)
 
 START_STATES_NAME = 1
 SETNAME_STATES_NAME = 1
@@ -121,6 +126,7 @@ async def setname_handler_name(
 
 
 @authenticated
+@user_has_nickname
 @log_activity("getname")
 async def getname_handler(
     update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict

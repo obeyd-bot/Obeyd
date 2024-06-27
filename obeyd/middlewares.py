@@ -30,9 +30,9 @@ def not_authenticated(f):
         if user is not None:
             if update.message:
                 await update.message.reply_text(
-                    f"ما قبلا با هم آشنا شدیم {user['nickname']} 😉 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن",
+                    f"ما قبلا با هم آشنا شدیم 😉 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن",
                     reply_markup=ReplyKeyboardMarkup(
-                        keyboard=[[KeyboardButton(text="/joke")]],
+                        keyboard=[["/joke"]],
                         one_time_keyboard=True,
                         resize_keyboard=True,
                     ),
@@ -57,6 +57,26 @@ def authenticated(f):
                     "قبل از هر چیز از دستور /start استفاده کن تا با هم آشنا بشیم 😉",
                     reply_markup=ReplyKeyboardMarkup(
                         keyboard=[[KeyboardButton(text="/start")]],
+                        one_time_keyboard=True,
+                        resize_keyboard=True,
+                    ),
+                )
+            return
+
+        return await f(update, context, user=user)
+
+    return g
+
+
+def user_has_nickname(f):
+    @wraps(f)
+    async def g(update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict):
+        if user["nickname"] is None:
+            if update.message:
+                await update.message.reply_text(
+                    "اول باید برای خودت یک اسم انتخاب کنی 😉 برای این کار از دستور /setname استفاده کن",
+                    reply_markup=ReplyKeyboardMarkup(
+                        keyboard=[["/setname"]],
                         one_time_keyboard=True,
                         resize_keyboard=True,
                     ),
