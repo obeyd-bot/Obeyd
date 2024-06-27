@@ -67,7 +67,6 @@ async def newjoke_callback_notify_admin(context: ContextTypes.DEFAULT_TYPE):
         joke=joke,
         user_id=None,
         chat_id=REVIEW_JOKES_CHAT_ID,
-        chat_type=None,
         context=context,
         kwargs={"reply_markup": jokereview_inline_keyboard_markup(joke)},
     )
