@@ -71,7 +71,7 @@ def authenticated(f):
 def user_has_nickname(f):
     @wraps(f)
     async def g(update: Update, context: ContextTypes.DEFAULT_TYPE, user: dict):
-        if user["nickname"] is None:
+        if user.get("nickname") is None:
             if update.message:
                 await update.message.reply_text(
                     "اول باید برای خودت یک اسم انتخاب کنی 😉 برای این کار از دستور /setname استفاده کن",

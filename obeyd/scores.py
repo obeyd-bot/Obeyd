@@ -64,7 +64,7 @@ async def scorejoke_callback_notify_creator(context: ContextTypes.DEFAULT_TYPE):
     assert joke
 
     scored_by_user_nickname = None
-    if scored_by_user is not None and scored_by_user["nickname"] is not None:
+    if scored_by_user is not None and scored_by_user.get("nickname") is not None:
         scored_by_user_nickname = scored_by_user["nickname"]
 
     msg = SCORES[joke_score["score"]]["score_notif"].format(

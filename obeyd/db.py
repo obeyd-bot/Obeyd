@@ -9,7 +9,9 @@ db = client[db_uri.rsplit("/", 1)[1]]
 
 async def create_indexes():
     await db["users"].create_index("user_id", name="user_id_unique", unique=True)
-    await db["users"].create_index("nickname", name="nickname_unique", unique=True)
+    await db["users"].create_index(
+        "nickname", name="nickname_unique", unique=True, sparse=True
+    )
     await db["joke_views"].create_index(
         ["user_id", "joke_id"], name="user_id_joke_id_unique", unique=True
     )
