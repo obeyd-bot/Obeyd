@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from pymongo.errors import DuplicateKeyError
-from telegram import KeyboardButton, ReplyKeyboardMarkup, Update
+from telegram import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import ContextTypes, ConversationHandler
 
 from obeyd.activities import log_activity_custom
@@ -93,11 +93,7 @@ async def start_handler_name(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     await update.message.reply_text(
         f"سلام <b>{chosen_nickname}</b> 🫡 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن 🙂",
-        reply_markup=ReplyKeyboardMarkup(
-            keyboard=[[KeyboardButton(text="/joke")]],
-            one_time_keyboard=True,
-            resize_keyboard=True,
-        ),
+        reply_markup=ReplyKeyboardRemove(),
     )
 
     return ConversationHandler.END
@@ -162,11 +158,7 @@ async def setname_handler_name(
 
     await update.message.reply_text(
         f"سلام <b>{chosen_nickname}</b> 🫡 برای اینکه برات جوک بفرستم از دستور /joke استفاده کن 🙂",
-        reply_markup=ReplyKeyboardMarkup(
-            keyboard=[[KeyboardButton(text="/joke")]],
-            one_time_keyboard=True,
-            resize_keyboard=True,
-        ),
+        reply_markup=ReplyKeyboardRemove(),
     )
 
     return ConversationHandler.END

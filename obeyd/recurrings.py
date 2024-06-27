@@ -1,7 +1,7 @@
 from datetime import datetime, time, timedelta, timezone
 
 import pytz
-from telegram import KeyboardButton, ReplyKeyboardMarkup, Update
+from telegram import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import ContextTypes, ConversationHandler
 
 from obeyd.config import RECURRING_INTERVALS
@@ -79,6 +79,7 @@ async def setrecurring_handler_interval(
 
     await update.message.reply_text(
         text=f"{interval['text']} همینجا جوک میفرستم 😁",
+        reply_markup=ReplyKeyboardRemove(),
     )
 
     return ConversationHandler.END

@@ -10,6 +10,7 @@ from telegram import (
     InputTextMessageContent,
     KeyboardButton,
     ReplyKeyboardMarkup,
+    ReplyKeyboardRemove,
     Update,
 )
 from telegram.ext import ContextTypes, ConversationHandler
@@ -167,7 +168,8 @@ async def newjoke_handler_joke(
         joke.update({"kind": "voice", "file_id": file_id})
         context.user_data["joke"] = joke  # type: ignore
         await update.message.reply_text(
-            "😂👍 میتونی توضیح کوتاهی هم در مورد وویسی که فرستادی بدی"
+            "😂👍 میتونی توضیح کوتاهی هم در مورد وویسی که فرستادی بدی",
+            reply_markup=ReplyKeyboardRemove(),
         )
         return NEWJOKE_STATES_JOKE_TEXT
     elif update.message.video_note is not None:
@@ -177,7 +179,8 @@ async def newjoke_handler_joke(
         joke.update({"kind": "video_note", "file_id": file_id})
         context.user_data["joke"] = joke  # type: ignore
         await update.message.reply_text(
-            "😂👍 میتونی توضیح کوتاهی هم در مورد ویدیو مسیجی که فرستادی بدی"
+            "😂👍 میتونی توضیح کوتاهی هم در مورد ویدیو مسیجی که فرستادی بدی",
+            reply_markup=ReplyKeyboardRemove(),
         )
         return NEWJOKE_STATES_JOKE_TEXT
     elif len(update.message.photo) > 0:
@@ -187,7 +190,8 @@ async def newjoke_handler_joke(
         joke.update({"kind": "photo", "file_id": file_id})
         context.user_data["joke"] = joke  # type: ignore
         await update.message.reply_text(
-            "😂👍 میتونی توضیح کوتاهی هم در مورد عکسی که فرستادی بدی"
+            "😂👍 میتونی توضیح کوتاهی هم در مورد عکسی که فرستادی بدی",
+            reply_markup=ReplyKeyboardRemove(),
         )
         return NEWJOKE_STATES_JOKE_TEXT
 
