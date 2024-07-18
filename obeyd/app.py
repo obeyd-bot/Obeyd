@@ -23,6 +23,11 @@ from obeyd.broadcast import (
     broadcast_handler_confirm,
     broadcast_handler_text,
 )
+from obeyd.feedback import (
+    FEEDBACK_STATES_FEEDBACK,
+    feedback_handler,
+    feedback_handler_feedback,
+)
 from obeyd.jokes.inline import inline_query_handler
 from obeyd.jokes.joke import joke_handler
 from obeyd.jokes.new import (
@@ -99,6 +104,19 @@ if __name__ == "__main__":
     assert job_queue
 
     app.add_handler(CommandHandler("start", start_handler))
+    app.add_handler(
+        ConversationHandler(
+            entry_points=[CommandHandler("feedback", feedback_handler)],  # type: ignore
+            states={
+                FEEDBACK_STATES_FEEDBACK: [
+                    MessageHandler(
+                        filters.TEXT & ~filters.COMMAND, feedback_handler_feedback  # type: ignore
+                    )
+                ]
+            },  # type: ignore
+            fallbacks=[CommandHandler("cancel", cancel_handler)],
+        )
+    )
     app.add_handler(
         ConversationHandler(
             entry_points=[CommandHandler("setname", setname_handler)],  # type: ignore
