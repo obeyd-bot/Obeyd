@@ -24,14 +24,7 @@ cp app.env.sample app.env
 
 To start the server, run the following command:
 ```bash
-docker compose up -d
-```
-
-### 4. Restart the Server After Changes
-
-If you make any changes to the bot, you need to restart the server:
-```bash
-docker compose restart
+docker compose up --build
 ```
 
 Feel free to reach out if you have any questions or need further assistance.
