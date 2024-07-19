@@ -13,9 +13,11 @@ To test the changes you made to the bot, you need a testing bot. Follow these st
 ### 2. Configure Environment Variables
 
 1. Copy the `app.env.sample` file to a new file named `app.env`:
-   ```bash
-   cp app.env.sample app.env
-   ```
+
+```bash
+cp app.env.sample app.env
+```
+
 2. Open `app.env` and fill in the necessary variables, including the bot token obtained from BotFather.
 
 ### 3. Start the Server
