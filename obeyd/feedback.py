@@ -60,7 +60,7 @@ async def feedback_notify_admin(context: ContextTypes.DEFAULT_TYPE):
     user = await db["users"].find_one({"user_id": feedback["user_id"]})
 
     if user is not None:
-        text = f"فیدبک جدیدی از طرف <b>{user['nickname']}</b> دریافت شد:\n\n{feedback['feedback']}"
+        text = f"فیدبک جدیدی از طرف <b>{user['user_fullname']}</b> دریافت شد:\n\n{feedback['feedback']}"
     else:
         text = f"فیدبک جدیدی دریافت شد:\n\n{feedback['feedback']}"
 
