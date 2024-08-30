@@ -1,9 +1,17 @@
-FROM python:3
+FROM python:3.10-slim-bullseye
 
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install -r /tmp/requirements.txt
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+RUN pip install --upgrade pip
+RUN pip install pipenv
 
 WORKDIR /app
+
+COPY Pipfile Pipfile.lock /app/
+
+RUN pipenv install --deploy --ignore-pipfile
+
 COPY . .
 
 ENV PYTHONPATH=.
