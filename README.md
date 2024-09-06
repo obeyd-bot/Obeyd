@@ -2,7 +2,7 @@
 
 ## Overview
 
-Welcome to the `OBEYD` Bot! This bot delivers a fresh, random joke straight to your chat, guaranteed to brighten your day. Whether you're looking for a quick laugh or want to liven up a conversation, this bot has you covered with a wide variety of jokes.
+Welcome to the `Obeyd` Bot! This bot delivers a fresh, random joke straight to your chat, guaranteed to brighten your day. Whether you're looking for a quick laugh or want to liven up a conversation, this bot has you covered with a wide variety of jokes.
 
 ## Setup Instructions
 
@@ -35,8 +35,8 @@ docker compose up --build
 
 We welcome contributions to expand the bot's joke database, add new features, or improve existing functionality. Here's how you can help:
 
-    Submit Jokes: Add your favorite jokes to our collection by submitting a pull request.
-    Improve the Bot: Help us enhance the bot's performance or add new features (like joke categories or user interaction commands).
-    Report Issues: If you encounter any bugs or have suggestions, feel free to open an issue!
+- Submit Jokes: Add your favorite jokes to our collection by submitting a pull request.
+- Improve the Bot: Help us enhance the bot's performance or add new features (like joke categories or user interaction commands).
+- Report Issues: If you encounter any bugs or have suggestions, feel free to open an issue!
 
 Whether you're a seasoned developer or just getting started, we'd love to have you contribute to making this bot more fun for everyone!
