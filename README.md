@@ -27,4 +27,14 @@ To start the server, run the following command:
 docker compose up --build
 ```
 
-Feel free to reach out if you have any questions or need further assistance.
+## Contributions
+
+Contributions:
+
+We welcome contributions to expand the bot's joke database, add new features, or improve existing functionality. Here's how you can help:
+
+    Submit Jokes: Add your favorite jokes to our collection by submitting a pull request.
+    Improve the Bot: Help us enhance the bot's performance or add new features (like joke categories or user interaction commands).
+    Report Issues: If you encounter any bugs or have suggestions, feel free to open an issue!
+
+Whether you're a seasoned developer or just getting started, we'd love to have you contribute to making this bot more fun for everyone!
